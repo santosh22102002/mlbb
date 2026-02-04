@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Caveman Run - Bouncy Edition</title>
+    <title>Caveman Run - Side Toss</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap');
 
@@ -131,32 +131,34 @@
     let score = 0;
     let gameRunning = false;
     let gameOver = false;
-    let spawnRate = 50;
     let frameCount = 0;
-    let speedMultiplier = 1;
-    let gravity = 0.5;
-    let floorY = 0; // Calculated in resize
+    let gravity = 0.4;
+    let floorY = 0; 
+    let spawnRate = 80; // Slower spawn rate for easier gameplay
 
     let bestScore = localStorage.getItem('cavemanBest') || 0;
+
+    // Entities lists
+    let bombs = [];
+    let meats = [];
 
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        // Floor is slightly above bottom where shadow is
         floorY = canvas.height - 100;
     }
     window.addEventListener('resize', resize);
     resize();
 
-    // Player Object
+    // --- PLAYER ---
     const player = {
         x: canvas.width / 2,
-        y: 0, // Set in update
+        y: 0,
         radius: 30,
         isDead: false,
         
         draw: function() {
-            this.y = floorY - 30; // Stand on floor
+            this.y = floorY - 30;
             ctx.save();
             ctx.translate(this.x, this.y);
 
@@ -167,26 +169,24 @@
             ctx.fill();
 
             if (this.isDead) {
-                // Dead Caveman
+                // Dead
                 ctx.fillStyle = '#555';
-                ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI*2); ctx.fill(); // Head
+                ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI*2); ctx.fill(); 
                 ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
-                // X Eyes
                 ctx.beginPath(); 
                 ctx.moveTo(-10,-10); ctx.lineTo(0,0); ctx.moveTo(0,-10); ctx.lineTo(-10,0);
                 ctx.moveTo(10,-10); ctx.lineTo(20,0); ctx.moveTo(20,-10); ctx.lineTo(10,0);
                 ctx.stroke();
             } else {
-                // Alive Caveman
-                // Body
-                ctx.fillStyle = '#d64d4d';
+                // Alive
+                ctx.fillStyle = '#d64d4d'; // Body
                 ctx.beginPath(); ctx.moveTo(-20, 15); ctx.lineTo(20, 15); ctx.lineTo(25, 50); ctx.lineTo(-25, 50); ctx.fill();
-                // Head
-                ctx.fillStyle = '#ffdbac'; ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI * 2); ctx.fill();
-                // Hair
-                ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.arc(0, -5, 32, Math.PI, 0); ctx.fill();
-                // Face
-                ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(-10, 0, 8, 0, Math.PI*2); ctx.arc(10, 0, 8, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#ffdbac'; // Head
+                ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#1a1a1a'; // Hair
+                ctx.beginPath(); ctx.arc(0, -5, 32, Math.PI, 0); ctx.fill();
+                ctx.fillStyle = 'white'; // Eyes
+                ctx.beginPath(); ctx.arc(-10, 0, 8, 0, Math.PI*2); ctx.arc(10, 0, 8, 0, Math.PI*2); ctx.fill();
                 ctx.fillStyle = 'black'; 
                 let eyeOffset = (inputX - this.x) * 0.05;
                 if(eyeOffset > 4) eyeOffset = 4; if(eyeOffset < -4) eyeOffset = -4;
@@ -202,44 +202,41 @@
         }
     };
 
-    // Obstacles
-    let obstacles = [];
-
-    class Obstacle {
+    // --- BOMB (Physics Object) ---
+    class Bomb {
         constructor() {
-            // Spawn from Top Left (0 to 30% width) or Top Right (70% to 100% width)
-            const side = Math.random() > 0.5 ? 'left' : 'right';
-            
-            if (side === 'left') {
-                this.x = Math.random() * (canvas.width * 0.3);
-                this.vx = Math.random() * 4 + 2; // Move Right
+            // Pick a side: 0 = Left, 1 = Right
+            let fromLeft = Math.random() > 0.5;
+
+            if (fromLeft) {
+                this.x = -50; 
+                this.vx = Math.random() * 2 + 2; // Speed: 2 to 4 (Slower than before)
             } else {
-                this.x = canvas.width - Math.random() * (canvas.width * 0.3);
-                this.vx = -(Math.random() * 4 + 2); // Move Left
+                this.x = canvas.width + 50; 
+                this.vx = -(Math.random() * 2 + 2);
             }
 
-            this.y = -60; // Start above screen
-            this.vy = 0;  // Start with 0 vertical speed (let gravity do the work)
+            // Start from a random height (mid-air)
+            this.y = canvas.height / 2 + (Math.random() * 100 - 50);
             
-            this.type = Math.random() > 0.7 ? 'meat' : 'bomb';
+            // Initial slight upward toss
+            this.vy = -5; 
+
             this.rot = 0;
-            this.rotSpeed = (Math.random() - 0.5) * 0.2;
+            this.rotSpeed = 0.1;
             this.markedForDeletion = false;
         }
 
         update() {
-            // Physics
             this.vy += gravity;
             this.x += this.vx;
             this.y += this.vy;
             this.rot += this.rotSpeed;
 
-            // Floor Collision (Bounce)
-            // Using floorY + 20 to simulate the "ground" level for the ball center
+            // Floor Bounce
             if (this.y + 20 > floorY) {
-                this.y = floorY - 20; // Reset position to surface
-                this.vy *= -0.7;      // Reverse velocity with dampening (loss of energy)
-                this.vx *= 0.9;       // Friction slows down horizontal movement on impact
+                this.y = floorY - 20;
+                this.vy *= -0.75; // Bouncy
             }
 
             // Remove if off screen
@@ -248,19 +245,12 @@
             }
 
             // Collision with Player
-            const dx = this.x - player.x;
-            const dy = this.y - (floorY - 30); // Player Y is effectively floorY - 30
-            const dist = Math.sqrt(dx*dx + dy*dy);
+            let dx = this.x - player.x;
+            let dy = this.y - (floorY - 30);
+            let dist = Math.sqrt(dx*dx + dy*dy);
 
-            if (dist < player.radius + 25 && !player.isDead) {
-                if (this.type === 'bomb') {
-                    endGame();
-                } else {
-                    score += 10;
-                    scoreEl.innerText = score;
-                    this.markedForDeletion = true;
-                    if(score % 50 === 0) speedMultiplier += 0.1;
-                }
+            if (dist < player.radius + 20 && !player.isDead) {
+                endGame();
             }
         }
 
@@ -268,32 +258,75 @@
             ctx.save();
             ctx.translate(this.x, this.y);
             ctx.rotate(this.rot);
-
-            if (this.type === 'bomb') {
-                // Bomb
-                ctx.fillStyle = '#4b2d5b'; ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = '#6a4c7d'; ctx.beginPath(); ctx.arc(-8, -8, 8, 0, Math.PI * 2); ctx.fill();
-                // Skull
-                ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(0, 2, 8, 0, Math.PI * 2); ctx.fill();
-                ctx.fillRect(-8, 8, 16, 4);
-                // Fuse
-                ctx.strokeStyle = '#ffa500'; ctx.lineWidth = 3;
-                ctx.beginPath(); ctx.moveTo(0, -25); ctx.quadraticCurveTo(5, -35, 10, -30); ctx.stroke();
-                ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.arc(10, -30, 3, 0, Math.PI*2); ctx.fill();
-            } else {
-                // Meat
-                ctx.rotate(Math.PI/4);
-                ctx.fillStyle = 'white'; ctx.fillRect(-20, -5, 40, 10);
-                ctx.beginPath(); 
-                ctx.arc(-20, -5, 6, 0, Math.PI*2); ctx.arc(-20, 5, 6, 0, Math.PI*2);
-                ctx.arc(20, -5, 6, 0, Math.PI*2); ctx.arc(20, 5, 6, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#c62828'; ctx.beginPath(); ctx.ellipse(0, 0, 15, 20, 0, 0, Math.PI*2); ctx.fill();
-            }
+            // Draw Bomb
+            ctx.fillStyle = '#4b2d5b'; ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#6a4c7d'; ctx.beginPath(); ctx.arc(-8, -8, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(0, 2, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillRect(-8, 8, 16, 4);
+            ctx.strokeStyle = '#ffa500'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(0, -25); ctx.quadraticCurveTo(5, -35, 10, -30); ctx.stroke();
+            ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.arc(10, -30, 3, 0, Math.PI*2); ctx.fill();
             ctx.restore();
         }
     }
 
-    // Input
+    // --- MEAT (Static Object) ---
+    class Meat {
+        constructor() {
+            this.x = Math.random() * (canvas.width - 100) + 50;
+            this.y = floorY - 15; // Sitting on floor
+            this.timer = 400; // Lasts for ~6 seconds
+            this.markedForDeletion = false;
+            this.scale = 0; // Pop-in animation
+        }
+
+        update() {
+            if (this.scale < 1) this.scale += 0.1;
+            this.timer--;
+            
+            // Blink when expiring
+            if (this.timer < 50 && this.timer % 10 === 0) {
+                this.visible = !this.visible;
+            } else {
+                this.visible = true;
+            }
+
+            if (this.timer <= 0) this.markedForDeletion = true;
+
+            // Collection
+            let dx = this.x - player.x;
+            // Height diff is small since both on ground
+            if (Math.abs(dx) < 50 && !player.isDead) {
+                score += 10;
+                scoreEl.innerText = score;
+                this.markedForDeletion = true;
+                // Spawn particle effect here if we wanted
+            }
+        }
+
+        draw() {
+            if (!this.visible) return;
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            ctx.scale(this.scale, this.scale);
+            ctx.rotate(Math.PI/4);
+            
+            // Bone
+            ctx.fillStyle = 'white'; 
+            ctx.fillRect(-20, -5, 40, 10);
+            ctx.beginPath(); 
+            ctx.arc(-20, -5, 6, 0, Math.PI*2); ctx.arc(-20, 5, 6, 0, Math.PI*2);
+            ctx.arc(20, -5, 6, 0, Math.PI*2); ctx.arc(20, 5, 6, 0, Math.PI*2); 
+            ctx.fill();
+
+            // Meat
+            ctx.fillStyle = '#c62828'; 
+            ctx.beginPath(); ctx.ellipse(0, 0, 15, 20, 0, 0, Math.PI*2); ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    // --- INPUT ---
     let inputX = canvas.width / 2;
     function handleInput(x) {
         if (!gameRunning && !gameOver) startGame();
@@ -302,20 +335,19 @@
     window.addEventListener('mousemove', e => handleInput(e.clientX));
     window.addEventListener('touchmove', e => handleInput(e.touches[0].clientX), {passive:false});
     
-    // Background Decor
+    // --- MAIN ---
     function drawBackground() {
         ctx.fillStyle = '#f4c494'; ctx.fillRect(0,0, canvas.width, canvas.height);
-        // Floor line
         ctx.fillStyle = '#e0b080'; ctx.fillRect(0, floorY, canvas.width, canvas.height - floorY);
     }
 
-    // Game Logic
     function startGame() {
         gameRunning = true;
         startScreen.style.display = 'none';
         score = 0;
         scoreEl.innerText = '0';
-        obstacles = [];
+        bombs = [];
+        meats = [];
         frameCount = 0;
     }
 
@@ -335,7 +367,8 @@
     function resetGame() {
         gameOver = false;
         player.isDead = false;
-        obstacles = [];
+        bombs = [];
+        meats = [];
         gameOverModal.style.display = 'none';
         startScreen.style.display = 'block';
         player.x = canvas.width / 2;
@@ -348,15 +381,30 @@
 
         if (gameRunning) frameCount++;
 
-        // Spawn logic
-        if (gameRunning && frameCount % Math.floor(spawnRate / speedMultiplier) === 0) {
-            obstacles.push(new Obstacle());
+        // Spawning Logic
+        if (gameRunning) {
+            // Spawn Bomb every ~1.5 seconds
+            if (frameCount % 90 === 0) {
+                bombs.push(new Bomb());
+            }
+            // Spawn Meat every ~3 seconds (independent of bombs)
+            if (frameCount % 180 === 0) {
+                meats.push(new Meat());
+            }
         }
 
-        obstacles.forEach((obs, index) => {
-            if(gameRunning || gameOver) obs.update(); // Keep moving even when dead (looks cool)
-            obs.draw();
-            if (obs.markedForDeletion) obstacles.splice(index, 1);
+        // Draw Meats (Behind bombs usually looks better)
+        meats.forEach((m, i) => {
+            if (gameRunning) m.update();
+            m.draw();
+            if (m.markedForDeletion) meats.splice(i, 1);
+        });
+
+        // Draw Bombs
+        bombs.forEach((b, i) => {
+            if (gameRunning || gameOver) b.update(); 
+            b.draw();
+            if (b.markedForDeletion) bombs.splice(i, 1);
         });
 
         player.update(inputX);
@@ -366,7 +414,6 @@
     }
 
     animate();
-    resize(); // Ensure floor is correct on load
 </script>
 </body>
 </html>
