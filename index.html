@@ -3,26 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Caveman Run - Side Toss</title>
+    <title>Real Ant Smasher - Clean</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap');
-
-        body {
+        * {
             margin: 0;
             padding: 0;
-            overflow: hidden;
-            background-color: #f4c494;
-            font-family: 'Fredoka One', cursive;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
             touch-action: none;
         }
 
-        #gameCanvas {
+        body {
+            background-color: #1e1e2e; /* Requested Floor Color */
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        canvas {
             display: block;
             width: 100%;
             height: 100%;
         }
 
-        /* UI Overlay */
         #ui-layer {
             position: absolute;
             top: 0;
@@ -33,387 +36,543 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            padding: 20px;
         }
 
-        #score-display {
+        .score-box {
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 20px;
+            border-radius: 20px;
+            align-self: flex-start;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .combo-box {
+            color: #ffcc00;
+            font-size: 40px;
+            font-weight: 900;
+            text-shadow: 3px 3px 0px #aa0000;
+            opacity: 0;
+            transition: opacity 0.2s;
             text-align: center;
-            font-size: 60px;
-            color: #000;
-            margin-top: 20px;
-            text-shadow: 2px 2px 0px #fff;
-        }
-
-        #start-screen {
-            position: absolute;
-            bottom: 20%;
             width: 100%;
-            text-align: center;
-            pointer-events: none;
-            animation: bounce 1.5s infinite;
+            position: absolute;
+            top: 20%;
         }
 
-        #start-text {
-            font-size: 30px;
-            color: #000;
+        #game-over-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            z-index: 10;
+        }
+
+        h1 {
+            color: #ff4444;
+            font-size: 40px;
+            margin-bottom: 10px;
             text-transform: uppercase;
             letter-spacing: 2px;
         }
 
-        /* Game Over Modal */
-        #game-over-modal {
-            display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #87CEEB;
-            padding: 20px;
-            border-radius: 20px;
-            border: 4px solid #fff;
-            text-align: center;
-            pointer-events: auto;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-            width: 280px;
+        p {
+            color: #ccc;
+            font-size: 18px;
+            margin-bottom: 30px;
+        }
+
+        .final-score {
+            font-size: 50px;
+            color: white;
+            font-weight: bold;
+            margin-bottom: 40px;
         }
 
         button {
-            background: #ffcc00;
+            padding: 15px 50px;
+            font-size: 22px;
+            background: linear-gradient(to bottom, #4caf50, #388e3c);
+            color: white;
             border: none;
-            padding: 15px 30px;
-            font-size: 24px;
-            font-family: 'Fredoka One', cursive;
-            color: #fff;
             border-radius: 50px;
             cursor: pointer;
-            margin-top: 15px;
-            box-shadow: 0 5px 0 #d4a000;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+            font-weight: bold;
+            transition: transform 0.1s;
         }
 
         button:active {
-            transform: translateY(5px);
-            box-shadow: 0 0 0 #d4a000;
+            transform: scale(0.95);
         }
 
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+        .overlay {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 4px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.5;
         }
     </style>
 </head>
 <body>
 
-    <canvas id="gameCanvas"></canvas>
-
     <div id="ui-layer">
-        <div id="score-display">0</div>
-        
-        <div id="start-screen">
-            <div id="start-text">Drag to Move</div>
-            <div style="font-size: 50px; margin-top:10px;">👆</div>
-        </div>
-
-        <div id="game-over-modal">
-            <h2 style="font-size:40px; color:white; -webkit-text-stroke:1px #333; margin:0;">SCORE</h2>
-            <div style="font-size:50px; margin:10px 0;" id="final-score">0</div>
-            <div style="font-size:20px; color:white; background:rgba(0,0,0,0.2); padding:5px 10px; border-radius:10px; display:inline-block;">BEST <span id="best-score">0</span></div>
-            <br>
-            <button onclick="resetGame()">↻ RESTART</button>
-        </div>
+        <div class="score-box">SCORE: <span id="score">0</span></div>
+        <div class="combo-box" id="combo-display">COMBO x0</div>
     </div>
+
+    <div id="game-over-modal">
+        <h1>You Got Stung!</h1>
+        <p>Final Score</p>
+        <div class="final-score" id="final-score">0</div>
+        <button onclick="restartGame()">Play Again</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+    <div class="overlay"></div>
 
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    const scoreEl = document.getElementById('score-display');
-    const startScreen = document.getElementById('start-screen');
-    const gameOverModal = document.getElementById('game-over-modal');
+    const scoreEl = document.getElementById('score');
+    const comboEl = document.getElementById('combo-display');
+    const modal = document.getElementById('game-over-modal');
+    const finalScoreEl = document.getElementById('final-score');
 
+    let width, height;
+    let entities = [];
+    let particles = [];
+    let texts = [];
     let score = 0;
-    let gameRunning = false;
-    let gameOver = false;
-    let frameCount = 0;
-    let gravity = 0.4;
-    let floorY = 0; 
-    let spawnRate = 80; // Slower spawn rate for easier gameplay
-
-    let bestScore = localStorage.getItem('cavemanBest') || 0;
-
-    // Entities lists
-    let bombs = [];
-    let meats = [];
+    let isGameOver = false;
+    let lastTime = 0;
+    
+    // Combo System
+    let comboCount = 0;
+    let comboTimer = 0;
+    const COMBO_DURATION = 1.5;
 
     function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        floorY = canvas.height - 100;
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
     }
     window.addEventListener('resize', resize);
     resize();
 
-    // --- PLAYER ---
-    const player = {
-        x: canvas.width / 2,
-        y: 0,
-        radius: 30,
-        isDead: false,
-        
-        draw: function() {
-            this.y = floorY - 30;
-            ctx.save();
-            ctx.translate(this.x, this.y);
+    const rand = (min, max) => Math.random() * (max - min) + min;
 
-            // Shadow
-            ctx.fillStyle = 'rgba(0,0,0,0.2)';
-            ctx.beginPath();
-            ctx.ellipse(0, 30, 25, 5, 0, 0, Math.PI * 2);
-            ctx.fill();
+    // --- CLASSES ---
 
-            if (this.isDead) {
-                // Dead
-                ctx.fillStyle = '#555';
-                ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI*2); ctx.fill(); 
-                ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
-                ctx.beginPath(); 
-                ctx.moveTo(-10,-10); ctx.lineTo(0,0); ctx.moveTo(0,-10); ctx.lineTo(-10,0);
-                ctx.moveTo(10,-10); ctx.lineTo(20,0); ctx.moveTo(20,-10); ctx.lineTo(10,0);
-                ctx.stroke();
-            } else {
-                // Alive
-                ctx.fillStyle = '#d64d4d'; // Body
-                ctx.beginPath(); ctx.moveTo(-20, 15); ctx.lineTo(20, 15); ctx.lineTo(25, 50); ctx.lineTo(-25, 50); ctx.fill();
-                ctx.fillStyle = '#ffdbac'; // Head
-                ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = '#1a1a1a'; // Hair
-                ctx.beginPath(); ctx.arc(0, -5, 32, Math.PI, 0); ctx.fill();
-                ctx.fillStyle = 'white'; // Eyes
-                ctx.beginPath(); ctx.arc(-10, 0, 8, 0, Math.PI*2); ctx.arc(10, 0, 8, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = 'black'; 
-                let eyeOffset = (inputX - this.x) * 0.05;
-                if(eyeOffset > 4) eyeOffset = 4; if(eyeOffset < -4) eyeOffset = -4;
-                ctx.beginPath(); ctx.arc(-10 + eyeOffset, 0, 3, 0, Math.PI*2); ctx.arc(10 + eyeOffset, 0, 3, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#ff9999'; ctx.beginPath(); ctx.arc(0, 8, 8, 0, Math.PI*2); ctx.fill();
-            }
-            ctx.restore();
-        },
-        update: function(targetX) {
-            this.x += (targetX - this.x) * 0.15;
-            if (this.x < 30) this.x = 30;
-            if (this.x > canvas.width - 30) this.x = canvas.width - 30;
-        }
-    };
-
-    // --- BOMB (Physics Object) ---
-    class Bomb {
-        constructor() {
-            // Pick a side: 0 = Left, 1 = Right
-            let fromLeft = Math.random() > 0.5;
-
-            if (fromLeft) {
-                this.x = -50; 
-                this.vx = Math.random() * 2 + 2; // Speed: 2 to 4 (Slower than before)
-            } else {
-                this.x = canvas.width + 50; 
-                this.vx = -(Math.random() * 2 + 2);
-            }
-
-            // Start from a random height (mid-air)
-            this.y = canvas.height / 2 + (Math.random() * 100 - 50);
-            
-            // Initial slight upward toss
-            this.vy = -5; 
-
-            this.rot = 0;
-            this.rotSpeed = 0.1;
-            this.markedForDeletion = false;
+    class Particle {
+        constructor(x, y, color, type) {
+            this.x = x;
+            this.y = y;
+            const angle = rand(0, Math.PI * 2);
+            const speed = rand(2, 8);
+            this.vx = Math.cos(angle) * speed;
+            this.vy = Math.sin(angle) * speed;
+            this.life = 1.0;
+            this.decay = rand(0.02, 0.04);
+            this.color = color;
+            this.size = rand(2, 6);
+            this.type = type;
         }
 
         update() {
-            this.vy += gravity;
             this.x += this.vx;
             this.y += this.vy;
-            this.rot += this.rotSpeed;
-
-            // Floor Bounce
-            if (this.y + 20 > floorY) {
-                this.y = floorY - 20;
-                this.vy *= -0.75; // Bouncy
-            }
-
-            // Remove if off screen
-            if (this.x < -100 || this.x > canvas.width + 100) {
-                this.markedForDeletion = true;
-            }
-
-            // Collision with Player
-            let dx = this.x - player.x;
-            let dy = this.y - (floorY - 30);
-            let dist = Math.sqrt(dx*dx + dy*dy);
-
-            if (dist < player.radius + 20 && !player.isDead) {
-                endGame();
-            }
+            this.life -= this.decay;
+            this.vx *= 0.95;
+            this.vy *= 0.95;
         }
 
-        draw() {
-            ctx.save();
-            ctx.translate(this.x, this.y);
-            ctx.rotate(this.rot);
-            // Draw Bomb
-            ctx.fillStyle = '#4b2d5b'; ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = '#6a4c7d'; ctx.beginPath(); ctx.arc(-8, -8, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(0, 2, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillRect(-8, 8, 16, 4);
-            ctx.strokeStyle = '#ffa500'; ctx.lineWidth = 3;
-            ctx.beginPath(); ctx.moveTo(0, -25); ctx.quadraticCurveTo(5, -35, 10, -30); ctx.stroke();
-            ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.arc(10, -30, 3, 0, Math.PI*2); ctx.fill();
-            ctx.restore();
+        draw(ctx) {
+            ctx.globalAlpha = Math.max(0, this.life);
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
         }
     }
 
-    // --- MEAT (Static Object) ---
-    class Meat {
-        constructor() {
-            this.x = Math.random() * (canvas.width - 100) + 50;
-            this.y = floorY - 15; // Sitting on floor
-            this.timer = 400; // Lasts for ~6 seconds
-            this.markedForDeletion = false;
-            this.scale = 0; // Pop-in animation
+    class FloatingText {
+        constructor(x, y, text, color, size = 20) {
+            this.x = x;
+            this.y = y;
+            this.text = text;
+            this.color = color;
+            this.life = 1.0;
+            this.vy = -3;
+            this.size = size;
         }
 
         update() {
-            if (this.scale < 1) this.scale += 0.1;
-            this.timer--;
-            
-            // Blink when expiring
-            if (this.timer < 50 && this.timer % 10 === 0) {
-                this.visible = !this.visible;
-            } else {
-                this.visible = true;
-            }
-
-            if (this.timer <= 0) this.markedForDeletion = true;
-
-            // Collection
-            let dx = this.x - player.x;
-            // Height diff is small since both on ground
-            if (Math.abs(dx) < 50 && !player.isDead) {
-                score += 10;
-                scoreEl.innerText = score;
-                this.markedForDeletion = true;
-                // Spawn particle effect here if we wanted
-            }
+            this.y += this.vy;
+            this.life -= 0.02;
         }
 
-        draw() {
-            if (!this.visible) return;
+        draw(ctx) {
+            ctx.globalAlpha = Math.max(0, this.life);
+            ctx.fillStyle = this.color;
+            ctx.font = `900 ${this.size}px Arial`;
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 3;
+            ctx.textAlign = "center";
+            ctx.strokeText(this.text, this.x, this.y);
+            ctx.fillText(this.text, this.x, this.y);
+            ctx.globalAlpha = 1;
+        }
+    }
+
+    class Entity {
+        constructor(type) {
+            this.type = type;
+            this.radius = type === 'ant' ? 20 : 25;
+            
+            // --- SPAWN LOGIC (Cross Screen) ---
+            // 0: Top, 1: Right, 2: Bottom, 3: Left
+            let side = Math.floor(Math.random() * 4);
+            let angle;
+            const pad = 60; 
+
+            switch(side) {
+                case 0: // Top
+                    this.x = rand(0, width);
+                    this.y = -pad;
+                    angle = rand(Math.PI / 4, (3 * Math.PI) / 4);
+                    break;
+                case 1: // Right
+                    this.x = width + pad;
+                    this.y = rand(0, height);
+                    angle = rand((3 * Math.PI) / 4, (5 * Math.PI) / 4);
+                    break;
+                case 2: // Bottom
+                    this.x = rand(0, width);
+                    this.y = height + pad;
+                    angle = rand((5 * Math.PI) / 4, (7 * Math.PI) / 4);
+                    break;
+                case 3: // Left
+                    this.x = -pad;
+                    this.y = rand(0, height);
+                    angle = rand(-Math.PI / 4, Math.PI / 4);
+                    break;
+            }
+
+            // Difficulty scaling
+            const speedMultiplier = 1 + (score * 0.03); 
+            let baseSpeed = type === 'ant' ? 3 : 5;
+            let currentSpeed = baseSpeed * speedMultiplier;
+            if(currentSpeed > 20) currentSpeed = 20;
+
+            this.vx = Math.cos(angle) * currentSpeed;
+            this.vy = Math.sin(angle) * currentSpeed;
+            
+            this.angle = angle;
+            this.legFrame = rand(0, 100);
+            this.remove = false;
+        }
+
+        update(dt) {
+            this.x += this.vx;
+            this.y += this.vy;
+
+            // Remove if exceedingly far off screen
+            const limit = 100;
+            if (this.x < -limit || this.x > width + limit || 
+                this.y < -limit || this.y > height + limit) {
+                this.remove = true;
+            }
+
+            this.angle = Math.atan2(this.vy, this.vx);
+            this.legFrame += 0.4;
+        }
+
+        draw(ctx) {
             ctx.save();
             ctx.translate(this.x, this.y);
-            ctx.scale(this.scale, this.scale);
-            ctx.rotate(Math.PI/4);
-            
-            // Bone
-            ctx.fillStyle = 'white'; 
-            ctx.fillRect(-20, -5, 40, 10);
-            ctx.beginPath(); 
-            ctx.arc(-20, -5, 6, 0, Math.PI*2); ctx.arc(-20, 5, 6, 0, Math.PI*2);
-            ctx.arc(20, -5, 6, 0, Math.PI*2); ctx.arc(20, 5, 6, 0, Math.PI*2); 
+            ctx.rotate(this.angle + Math.PI / 2); 
+
+            // Drop Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.beginPath();
+            ctx.ellipse(5, 5, 15, 25, 0, 0, Math.PI*2);
             ctx.fill();
 
-            // Meat
-            ctx.fillStyle = '#c62828'; 
-            ctx.beginPath(); ctx.ellipse(0, 0, 15, 20, 0, 0, Math.PI*2); ctx.fill();
+            if (this.type === 'ant') {
+                this.drawRealisticAnt(ctx);
+            } else {
+                this.drawRealisticBee(ctx);
+            }
+
             ctx.restore();
         }
+
+        drawRealisticAnt(ctx) {
+            ctx.strokeStyle = '#5a1e1e';
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            for (let i = 0; i < 3; i++) {
+                let side = 1;
+                let legY = -5 + (i * 10);
+                let move = Math.sin(this.legFrame + (i%2)*Math.PI) * 0.4;
+                for(let k=0; k<2; k++) {
+                    side = k === 0 ? -1 : 1;
+                    ctx.beginPath();
+                    ctx.moveTo(side * 5, legY); 
+                    let kneeX = side * 18 + (move * 5 * side);
+                    let kneeY = legY - 5 + (move * 5);
+                    ctx.lineTo(kneeX, kneeY);
+                    ctx.lineTo(kneeX + (side * 12), kneeY + 15);
+                    ctx.stroke();
+                }
+            }
+
+            let gradAbd = ctx.createRadialGradient(0, 15, 2, 0, 15, 18);
+            gradAbd.addColorStop(0, '#e85d5d'); 
+            gradAbd.addColorStop(0.4, '#b71c1c');
+            gradAbd.addColorStop(1, '#560000');
+            ctx.fillStyle = gradAbd;
+            ctx.beginPath(); ctx.ellipse(0, 18, 12, 16, 0, 0, Math.PI * 2); ctx.fill();
+
+            let gradThor = ctx.createRadialGradient(0, 0, 1, 0, 0, 8);
+            gradThor.addColorStop(0, '#d32f2f'); gradThor.addColorStop(1, '#4a0d0d');
+            ctx.fillStyle = gradThor;
+            ctx.beginPath(); ctx.ellipse(0, 0, 7, 9, 0, 0, Math.PI * 2); ctx.fill();
+
+            let gradHead = ctx.createRadialGradient(0, -14, 1, 0, -14, 9);
+            gradHead.addColorStop(0, '#d32f2f'); gradHead.addColorStop(1, '#560000');
+            ctx.fillStyle = gradHead;
+            ctx.beginPath(); ctx.ellipse(0, -14, 9, 8, 0, 0, Math.PI * 2); ctx.fill();
+
+            ctx.strokeStyle = '#3e0b0b'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(-4, -20); ctx.quadraticCurveTo(-8, -28, 0, -30);
+            ctx.moveTo(4, -20); ctx.quadraticCurveTo(8, -28, 0, -30); ctx.stroke();
+
+            ctx.strokeStyle = '#5a1e1e'; ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(-4, -18); ctx.lineTo(-12, -25); ctx.lineTo(-18 + Math.sin(this.legFrame)*2, -35);
+            ctx.moveTo(4, -18); ctx.lineTo(12, -25); ctx.lineTo(18 + Math.cos(this.legFrame)*2, -35);
+            ctx.stroke();
+
+            ctx.fillStyle = 'black';
+            ctx.beginPath(); ctx.ellipse(-5, -16, 2, 3, 0.2, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(5, -16, 2, 3, -0.2, 0, Math.PI*2); ctx.fill();
+        }
+
+        drawRealisticBee(ctx) {
+            let flutter = Math.sin(this.legFrame * 15);
+            let wingScale = 0.8 + (flutter * 0.2);
+            
+            ctx.fillStyle = 'rgba(230, 245, 255, 0.6)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 1;
+
+            for(let dir of [-1, 1]) {
+                ctx.save();
+                ctx.translate(dir * 5, -5);
+                ctx.scale(wingScale, 1); 
+                ctx.rotate(dir * 0.3);
+                
+                ctx.beginPath(); ctx.ellipse(dir * 12, 5, 16, 6, dir * -0.2, 0, Math.PI*2);
+                ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, 5); ctx.lineTo(dir * 20, 5);
+                ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.stroke();
+                ctx.restore();
+            }
+
+            let gradBody = ctx.createLinearGradient(-10, 0, 10, 0);
+            gradBody.addColorStop(0, '#bf9b30'); gradBody.addColorStop(0.5, '#FFD700'); gradBody.addColorStop(1, '#bf9b30');
+            ctx.fillStyle = gradBody;
+            ctx.beginPath(); ctx.ellipse(0, 0, 14, 18, 0, 0, Math.PI * 2); ctx.fill();
+
+            ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 5; ctx.lineCap = 'butt';
+            ctx.beginPath(); ctx.arc(0, -5, 12, 0.2, Math.PI - 0.2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(0, 5, 12, 0.2, Math.PI - 0.2); ctx.stroke();
+
+            ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0, -16, 9, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#441111';
+            ctx.beginPath(); ctx.ellipse(-5, -18, 3, 5, -0.2, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(5, -18, 3, 5, 0.2, 0, Math.PI*2); ctx.fill();
+
+            ctx.fillStyle = '#111';
+            ctx.beginPath(); ctx.moveTo(-2, 16); ctx.lineTo(2, 16); ctx.lineTo(0, 24); ctx.fill();
+        }
     }
 
-    // --- INPUT ---
-    let inputX = canvas.width / 2;
-    function handleInput(x) {
-        if (!gameRunning && !gameOver) startGame();
-        inputX = x;
-    }
-    window.addEventListener('mousemove', e => handleInput(e.clientX));
-    window.addEventListener('touchmove', e => handleInput(e.touches[0].clientX), {passive:false});
-    
-    // --- MAIN ---
-    function drawBackground() {
-        ctx.fillStyle = '#f4c494'; ctx.fillRect(0,0, canvas.width, canvas.height);
-        ctx.fillStyle = '#e0b080'; ctx.fillRect(0, floorY, canvas.width, canvas.height - floorY);
+    // --- INPUT HANDLING ---
+
+    function handleInput(e) {
+        if (isGameOver) return;
+        e.preventDefault(); 
+
+        let touches = e.changedTouches;
+        if (touches) {
+            for (let i = 0; i < touches.length; i++) {
+                processTap(touches[i].clientX, touches[i].clientY);
+            }
+        } else {
+            processTap(e.clientX, e.clientY);
+        }
     }
 
-    function startGame() {
-        gameRunning = true;
-        startScreen.style.display = 'none';
+    function processTap(cx, cy) {
+        for (let i = entities.length - 1; i >= 0; i--) {
+            let ent = entities[i];
+            let dist = Math.hypot(ent.x - cx, ent.y - cy);
+            
+            if (dist < ent.radius + 15) {
+                if (ent.type === 'bee') {
+                    triggerGameOver();
+                } else {
+                    killAnt(i, ent);
+                }
+                return; 
+            }
+        }
+    }
+
+    function killAnt(index, ant) {
+        entities.splice(index, 1);
+        
+        createParticles(ant.x, ant.y, '#5c8a3c', 'blood'); 
+        createParticles(ant.x, ant.y, '#e85d5d', 'shell'); 
+        
+        comboCount++;
+        comboTimer = COMBO_DURATION;
+        
+        let points = 1 + Math.floor(comboCount / 2);
+        score += points;
+        scoreEl.innerText = score;
+
+        let txt = comboCount > 1 ? `+${points} x${comboCount}` : `+${points}`;
+        texts.push(new FloatingText(ant.x, ant.y, txt, '#fff', 20 + (comboCount * 2)));
+
+        updateComboUI();
+    }
+
+    function triggerGameOver() {
+        if (isGameOver) return;
+        isGameOver = true;
+        modal.style.display = 'flex';
+        finalScoreEl.innerText = score;
+        if(navigator.vibrate) navigator.vibrate(500);
+    }
+
+    function updateComboUI() {
+        if (comboCount > 1) {
+            comboEl.innerText = `COMBO x${comboCount}`;
+            comboEl.style.opacity = 1;
+            comboEl.style.transform = `scale(1.3) rotate(${rand(-10,10)}deg)`;
+            setTimeout(() => {
+                comboEl.style.transform = `scale(1) rotate(0deg)`;
+            }, 100);
+        } else {
+            comboEl.style.opacity = 0;
+        }
+    }
+
+    function createParticles(x, y, color, type) {
+        let count = type === 'blood' ? 8 : 4;
+        for(let i=0; i<count; i++) {
+            particles.push(new Particle(x, y, color, type));
+        }
+    }
+
+    canvas.addEventListener('mousedown', handleInput);
+    canvas.addEventListener('touchstart', handleInput, {passive: false});
+
+    // --- GAME LOOP ---
+
+    function restartGame() {
+        entities = [];
+        particles = [];
+        texts = [];
         score = 0;
+        comboCount = 0;
         scoreEl.innerText = '0';
-        bombs = [];
-        meats = [];
-        frameCount = 0;
+        isGameOver = false;
+        modal.style.display = 'none';
+        
+        lastTime = performance.now();
+        requestAnimationFrame(loop);
     }
 
-    function endGame() {
-        gameRunning = false;
-        gameOver = true;
-        player.isDead = true;
-        if (score > bestScore) {
-            bestScore = score;
-            localStorage.setItem('cavemanBest', bestScore);
+    function spawnEntity() {
+        let beeChance = Math.min(0.35, 0.05 + (score * 0.005));
+        let type = Math.random() < beeChance ? 'bee' : 'ant';
+        entities.push(new Entity(type));
+    }
+
+    function loop(timestamp) {
+        if (isGameOver) return;
+        
+        const dt = (timestamp - lastTime) / 1000;
+        lastTime = timestamp;
+
+        // Clear Screen with plain background color
+        ctx.fillStyle = '#1e1e2e';
+        ctx.fillRect(0, 0, width, height);
+
+        // Spawn Logic
+        let maxEntities = 4 + Math.floor(score / 8);
+        if (maxEntities > 25) maxEntities = 25;
+
+        if (entities.length < maxEntities) {
+            if (Math.random() < 0.05) spawnEntity(); 
         }
-        document.getElementById('final-score').innerText = score;
-        document.getElementById('best-score').innerText = bestScore;
-        gameOverModal.style.display = 'block';
-    }
 
-    function resetGame() {
-        gameOver = false;
-        player.isDead = false;
-        bombs = [];
-        meats = [];
-        gameOverModal.style.display = 'none';
-        startScreen.style.display = 'block';
-        player.x = canvas.width / 2;
-        inputX = canvas.width / 2;
-    }
-
-    function animate() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawBackground();
-
-        if (gameRunning) frameCount++;
-
-        // Spawning Logic
-        if (gameRunning) {
-            // Spawn Bomb every ~1.5 seconds
-            if (frameCount % 90 === 0) {
-                bombs.push(new Bomb());
-            }
-            // Spawn Meat every ~3 seconds (independent of bombs)
-            if (frameCount % 180 === 0) {
-                meats.push(new Meat());
+        // Combo Decay
+        if (comboCount > 0) {
+            comboTimer -= dt;
+            if (comboTimer <= 0) {
+                comboCount = 0;
+                updateComboUI();
             }
         }
 
-        // Draw Meats (Behind bombs usually looks better)
-        meats.forEach((m, i) => {
-            if (gameRunning) m.update();
-            m.draw();
-            if (m.markedForDeletion) meats.splice(i, 1);
-        });
+        // Update & Draw
+        for (let i = entities.length - 1; i >= 0; i--) {
+            let ent = entities[i];
+            ent.update(dt);
+            ent.draw(ctx);
+            
+            if (ent.remove) {
+                entities.splice(i, 1);
+            }
+        }
+        
+        particles = particles.filter(p => p.life > 0);
+        particles.forEach(p => { p.update(); p.draw(ctx); });
 
-        // Draw Bombs
-        bombs.forEach((b, i) => {
-            if (gameRunning || gameOver) b.update(); 
-            b.draw();
-            if (b.markedForDeletion) bombs.splice(i, 1);
-        });
+        texts = texts.filter(t => t.life > 0);
+        texts.forEach(t => { t.update(); t.draw(ctx); });
 
-        player.update(inputX);
-        player.draw();
-
-        requestAnimationFrame(animate);
+        requestAnimationFrame(loop);
     }
 
-    animate();
+    restartGame();
+
 </script>
 </body>
 </html>
