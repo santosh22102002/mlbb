@@ -1,3 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mobile Legends ID Verify</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+            max-width: 500px;
+            margin: auto;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        #result {
+            margin-top: 15px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>Mobile Legends ID Verify</h2>
+
+<input type="text" id="userid" placeholder="Enter User ID">
+<input type="text" id="zoneid" placeholder="Enter Server ID">
+
+<button onclick="checkID()">Check ID</button>
+
+<div id="result"></div>
+
 <script>
 
 async function checkID() {
@@ -34,3 +71,6 @@ async function checkID() {
 }
 
 </script>
+
+</body>
+</html>
