@@ -1,92 +1,154 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>MOBA COIN: TOPUP</title>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 40px;
-    }
-
-    input {
-      padding: 8px;
-      margin: 5px;
-      width: 200px;
-    }
-
-    button {
-      padding: 8px 15px;
-      cursor: pointer;
-    }
-
-    #result {
-      margin-top: 20px;
-      font-size: 1.1em;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tap Coin Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0f172a; /* Telegram Dark Theme Depth */
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+            overflow: hidden;
+        }
+        .coin-gradient {
+            background: radial-gradient(circle, #fcd34d 0%, #b45309 100%);
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: flex; }
+        .active-tab-btn { border-bottom: 3px solid #fcd34d; color: #fcd34d; }
+    </style>
 </head>
+<body class="flex flex-col h-screen max-w-md mx-auto border-x border-slate-800">
 
-<body>
+    <header class="p-4 text-center border-bottom border-slate-800">
+        <p class="text-[10px] text-slate-400 uppercase tracking-widest">Weekly Challenge Ends In: 4D 15H</p>
+        <p class="text-[10px] text-amber-500 mb-2">Secure Top 10 to win MLBB Weekly Diamond Pass</p>
+        <h1 id="coin-display" class="text-4xl font-black text-white">4800 COIN</h1>
+    </header>
 
-  <h2>MOBA COIN: MLBB TOPUP</h2>
+    <main class="flex-grow flex flex-col px-6 overflow-y-auto pb-24">
+        
+        <section id="tap-tab" class="tab-content active flex-col items-center justify-center space-y-8 mt-10">
+            <div class="flex justify-between w-full px-4">
+                <button onclick="toggleModal('help-modal')" class="bg-slate-800 p-2 rounded-full w-10 h-10 flex items-center justify-center border border-slate-700">?</button>
+                <button onclick="toggleModal('id-modal')" class="bg-slate-800 p-2 rounded-full w-10 h-10 flex items-center justify-center border border-slate-700 text-[10px] font-bold">ID</button>
+            </div>
 
-  <label>User ID:</label><br>
-  <input type="text" id="userId" placeholder="Enter User ID"><br>
+            <div id="coin-btn" onclick="handleTap()" class="w-64 h-64 rounded-full coin-gradient shadow-[0_0_50px_rgba(251,191,36,0.3)] flex items-center justify-center cursor-pointer active:scale-95 transition-transform border-8 border-amber-600/50">
+                <span class="text-3xl font-black text-amber-900 drop-shadow-md">TAP ON COIN</span>
+            </div>
 
-  <label>Server ID:</label><br>
-  <input type="text" id="serverId" placeholder="Enter Server ID"><br><br>
+            <div class="w-full space-y-2">
+                <div class="flex justify-center items-center gap-2 text-sm">
+                    <span>⚡</span> <span id="energy-text">390/500</span>
+                </div>
+                <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-700">
+                    <div id="energy-bar" class="bg-amber-400 h-full" style="width: 78%"></div>
+                </div>
+            </div>
 
-  <button onclick="checkID()">Check Player</button>
+            <div class="flex gap-4 w-full">
+                <button class="flex-1 bg-slate-800 py-3 rounded-xl text-xs font-bold border border-slate-700">AUTO TAP (ADS)</button>
+                <button class="flex-1 bg-slate-800 py-3 rounded-xl text-xs font-bold border border-slate-700">DOUBLE COIN (ADS)</button>
+            </div>
+        </section>
 
-  <div id="result"></div>
+        <section id="earn-tab" class="tab-content flex-col space-y-4 pt-6">
+            <div class="earn-card bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
+                <h3 class="text-xs text-slate-400 mb-2 uppercase">Daily Log In</h3>
+                <div class="h-16 bg-slate-700/50 rounded-lg flex items-center justify-center">Claim +500 Coins</div>
+            </div>
+            <div class="earn-card bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
+                <h3 class="text-xs text-slate-400 mb-2 uppercase">Referral Task</h3>
+                <div class="h-16 bg-slate-700/50 rounded-lg flex items-center justify-center">Invite 5 Friends</div>
+            </div>
+            <div class="earn-card bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
+                <h3 class="text-xs text-slate-400 mb-2 uppercase">Special Task</h3>
+                <div class="h-16 bg-slate-700/50 rounded-lg flex items-center justify-center">Follow Socials</div>
+            </div>
+        </section>
 
-  <script>
-    async function checkID() {
-      const userId = document.getElementById("userId").value.trim();
-      const serverId = document.getElementById("serverId").value.trim();
-      const resultDiv = document.getElementById("result");
+        <section id="leaderboard-tab" class="tab-content flex-col pt-4">
+            <div class="space-y-2">
+                <div class="flex justify-between p-3 bg-slate-800 rounded-lg border border-slate-700 text-amber-400 font-bold">
+                    <span>1. ALEX</span> <span>593,908</span>
+                </div>
+                <div class="flex justify-between p-3 bg-slate-800/40 rounded-lg text-sm">
+                    <span>2. TOM</span> <span>571,334</span>
+                </div>
+                <div class="flex justify-between p-3 bg-slate-800/40 rounded-lg text-sm text-slate-400">
+                    <span>478. YOU</span> <span class="text-white">4,800</span>
+                </div>
+            </div>
+        </section>
+    </main>
 
-      if (!userId || !serverId) {
-        resultDiv.innerHTML = "Please enter both User ID and Server ID";
-        return;
-      }
+    <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-slate-900 border-t border-slate-800 flex justify-around p-4 z-50">
+        <button onclick="switchTab('tap')" id="btn-tap" class="flex-1 py-2 font-bold active-tab-btn">TAP</button>
+        <button onclick="switchTab('earn')" id="btn-earn" class="flex-1 py-2 font-bold text-slate-500">EARN</button>
+        <button onclick="switchTab('leaderboard')" id="btn-leaderboard" class="flex-1 py-2 font-bold text-slate-500">LEADERBOARD</button>
+    </nav>
 
-      resultDiv.innerHTML = "Checking...";
+    <div id="help-modal" class="hidden fixed inset-0 bg-black/80 z-[100] p-10">
+        <div class="bg-slate-900 w-full h-full rounded-3xl p-6 relative border border-slate-700">
+            <button onclick="toggleModal('help-modal')" class="absolute top-4 right-4 text-2xl">×</button>
+            <h2 class="text-2xl font-bold mb-4">GAME RULE</h2>
+            <p class="text-slate-400">1. Tap to earn coins.<br>2. Energy refills over time.<br>3. Top 10 win MLBB passes weekly.</p>
+        </div>
+    </div>
 
-      try {
-        const response = await fetch("https://api.velixs.com/idgames-checker", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            game: "ml",
-            id: userId,
-            zoneid: serverId,
-            apikey: "8494d764afca9cedf5d000990f5e8a18d4f75cfccf233523b1"
-          })
-        });
+    <div id="id-modal" class="hidden fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-6">
+        <div class="bg-slate-900 w-full rounded-2xl p-6 relative border border-slate-700">
+            <button onclick="toggleModal('id-modal')" class="absolute top-4 right-4 text-2xl">×</button>
+            <h2 class="font-bold mb-4">MLBB ID POPUP</h2>
+            <div class="space-y-3 text-sm">
+                <div class="flex justify-between border-b border-slate-800 pb-2"><span>SERVER ID</span> <span class="text-amber-500">CHANGE</span></div>
+                <div class="pb-2">USER ID</div>
+                <div class="pb-2">IN GAME NAME</div>
+            </div>
+        </div>
+    </div>
 
-        const data = await response.json();
+    <script>
+        let coins = 4800;
+        let energy = 390;
 
-        if (data.status === true) {
-          resultDiv.innerHTML = `
-            <b>Player Found!</b><br><br>
-            User ID: ${userId}<br>
-            Server ID: ${serverId}<br>
-            Nickname: <b>${data.data.username}</b>
-          `;
-        } else {
-          resultDiv.innerHTML = "Player not found. Please check the IDs.";
+        function handleTap() {
+            if(energy > 0) {
+                coins += 1;
+                energy -= 1;
+                updateUI();
+                // Add tiny bounce animation
+                const btn = document.getElementById('coin-btn');
+                btn.style.transform = 'scale(0.95)';
+                setTimeout(() => btn.style.transform = 'scale(1)', 50);
+            }
         }
 
-      } catch (error) {
-        resultDiv.innerHTML = "Error: " + error.message;
-      }
-    }
-  </script>
+        function updateUI() {
+            document.getElementById('coin-display').innerText = `${coins} COIN`;
+            document.getElementById('energy-text').innerText = `${energy}/500`;
+            document.getElementById('energy-bar').style.width = `${(energy/500)*100}%`;
+        }
 
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-tab-btn', 'text-slate-500'));
+            
+            document.getElementById(tabId + '-tab').classList.add('active');
+            document.getElementById('btn-' + tabId).classList.add('active-tab-btn');
+            
+            // Add grey color back to non-active buttons
+            document.querySelectorAll('nav button:not(.active-tab-btn)').forEach(b => b.classList.add('text-slate-500'));
+        }
+
+        function toggleModal(id) {
+            const m = document.getElementById(id);
+            m.classList.toggle('hidden');
+        }
+    </script>
 </body>
 </html>
