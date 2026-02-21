@@ -3,600 +3,222 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MOBA Coin - Tap to Earn</title>
+    <title>MOBA Coin</title>
     <style>
-        /* Telegram Premium Color Palette */
         :root {
-            --bg-deep: #0a122a;
-            --bg-card: #162140;
+            --bg-solid: #050a1d; 
+            --nav-bg: #111936;
             --accent-blue: #0088cc;
-            --accent-gold: #ffcc00;
             --text-white: #ffffff;
-            --text-gray: #8e97b0;
-            --nav-bg: #121b36;
-            --success: #31d0aa;
+            --text-dim: #8e97b0;
+            --border-ui: #1e2f64;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
+        * { 
+            box-sizing: border-box; 
+            margin: 0; padding: 0; 
+            font-family: 'Inter', -apple-system, sans-serif; 
+            -webkit-tap-highlight-color: transparent; 
         }
 
-        body {
-            background-color: var(--bg-deep);
-            color: var(--text-white);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+        body { 
+            background-color: var(--bg-solid); 
+            color: var(--text-white); 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
         }
 
         /* --- GLOBAL HEADER --- */
         .global-header {
             padding: 20px 15px;
             text-align: center;
-            background: linear-gradient(180deg, rgba(0, 136, 204, 0.15) 0%, rgba(10, 18, 42, 0) 100%);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            flex-shrink: 0;
+            border-bottom: 1px solid var(--border-ui);
         }
 
-        .season-title {
-            color: var(--accent-gold);
-            font-size: 1.1rem;
-            font-weight: 800;
-            letter-spacing: 0.5px;
-            text-shadow: 0 0 10px rgba(255, 204, 0, 0.3);
-        }
+        .page { display: none; flex: 1; overflow-y: auto; padding: 20px 15px 120px; }
+        .active-page { display: flex; flex-direction: column; }
 
-        .subtitle {
-            font-size: 0.65rem;
-            color: var(--text-gray);
-            font-weight: 600;
-            letter-spacing: 1px;
-            margin-top: 4px;
-        }
-
-        /* --- PAGES --- */
-        .page {
-            display: none;
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px 15px 120px 15px;
-        }
-
-        .active-page {
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* --- TAP PAGE --- */
-        .top-row-btns {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
-
-        .utility-btn {
-            background: rgba(255, 255, 255, 0.08);
-            border: none;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 10px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .balance-section {
-            text-align: center;
-            margin: 30px 0;
-        }
-
-        .coin-balance {
-            font-size: 3rem;
-            font-weight: 900;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-        }
-
-        .coin-icon-circle {
-            width: 45px;
-            height: 45px;
-            background: linear-gradient(135deg, #ffd700, #ff8c00);
+        /* --- THE COIN --- */
+        .coin-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .moba-coin {
+            width: 220px; height: 220px;
             border-radius: 50%;
-            box-shadow: 0 0 20px rgba(255, 204, 0, 0.5);
-            border: 2px solid #fff;
-        }
-
-        .mc-label {
-            color: var(--text-gray);
-            font-weight: bold;
-            letter-spacing: 2px;
-            font-size: 0.8rem;
-        }
-
-        .tap-center {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .main-tap-btn {
-            width: 240px;
-            height: 240px;
-            background: radial-gradient(circle, #253975 0%, #162140 100%);
-            border: 10px solid #1f2f5c;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
-            transition: transform 0.05s, box-shadow 0.2s;
+            background-color: var(--accent-blue);
+            border: 4px solid var(--text-white);
+            display: flex; align-items: center; justify-content: center;
             cursor: pointer;
-            position: relative;
+            box-shadow: 0 10px 0 #005a8a;
+            transition: transform 0.05s;
         }
+        .moba-coin:active { transform: translateY(5px); box-shadow: 0 5px 0 #005a8a; }
+        .coin-text { color: var(--text-white); font-weight: 900; font-size: 2rem; text-align: center; }
 
-        .main-tap-btn:active { transform: scale(0.96); }
-
-        .main-tap-btn.boost-glow {
-            border-color: var(--accent-gold);
-            box-shadow: 0 0 50px rgba(255, 204, 0, 0.4);
-        }
-
-        .tap-text {
-            text-align: center;
-            font-weight: 900;
-            font-size: 1.8rem;
-            line-height: 1;
-            color: #fff;
-            text-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-
-        .energy-wrapper {
-            width: 100%;
-            max-width: 280px;
-            margin-top: 40px;
-        }
-
-        .energy-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 0.85rem;
-            font-weight: bold;
-        }
-
-        .energy-bar-bg {
-            height: 14px;
-            background: #0f172a;
-            border-radius: 20px;
-            overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .energy-bar-fill {
-            height: 100%;
-            width: 100%;
-            background: linear-gradient(90deg, #0088cc, #00ffcc);
-            transition: width 0.3s ease;
-        }
-
-        /* --- NAVIGATION --- */
+        /* --- BOTTOM NAVIGATION (EXACT DESIGN) --- */
         .nav-bar {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            height: 80px;
-            background: var(--nav-bg);
+            height: 70px;
+            background-color: var(--nav-bg);
             display: flex;
-            border-top: 1px solid rgba(255,255,255,0.05);
+            justify-content: space-around;
+            border-top: 1px solid var(--border-ui);
             padding-bottom: env(safe-area-inset-bottom);
+            z-index: 1000;
         }
 
-        .nav-btn {
+        .nav-item {
             flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            color: var(--text-gray);
             text-decoration: none;
-            gap: 4px;
-        }
-
-        .nav-btn.active { color: var(--accent-blue); }
-
-        .nav-icon { font-size: 1.5rem; }
-        .nav-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; }
-
-        /* --- LISTS & CARDS --- */
-        .card {
-            background: var(--bg-card);
-            border-radius: 16px;
-            padding: 15px;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .reward-pill {
-            background: rgba(255,204,0,0.15);
-            color: var(--accent-gold);
-            padding: 4px 10px;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 0.8rem;
-        }
-
-        /* --- POPUPS --- */
-        .overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.9);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .popup {
-            background: var(--bg-card);
-            width: 100%;
-            max-width: 340px;
-            border-radius: 28px;
-            padding: 30px;
-            text-align: center;
+            color: var(--text-dim);
+            transition: all 0.2s ease;
             position: relative;
-            animation: springIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            border: 1px solid rgba(255,255,255,0.1);
+            border-top: 3px solid transparent; /* Placeholder for active state */
         }
 
-        @keyframes springIn { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-        .close-x {
-            position: absolute;
-            top: 20px; right: 20px;
-            font-size: 1.5rem;
-            color: var(--text-gray);
-            cursor: pointer;
+        /* Icon styling */
+        .nav-icon {
+            font-size: 1.4rem;
+            margin-bottom: 4px;
         }
 
-        .btn-primary {
+        .nav-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Active State: Top border and White text */
+        .nav-item.active {
+            color: var(--text-white);
+            border-top: 3px solid var(--accent-blue);
+            background-color: rgba(0, 136, 204, 0.05);
+        }
+
+        /* --- BALANCE & ENERGY --- */
+        .balance-box { text-align: center; margin: 20px 0; }
+        .balance-box h1 { font-size: 3rem; font-weight: 900; }
+        
+        .energy-bar {
+            width: 100%; max-width: 250px;
+            height: 10px;
+            background: var(--border-ui);
+            border-radius: 10px;
+            margin: 10px auto;
+            overflow: hidden;
+        }
+        .energy-fill {
+            height: 100%;
+            background: var(--accent-blue);
             width: 100%;
-            padding: 16px;
-            background: var(--accent-blue);
-            border: none;
-            border-radius: 14px;
-            color: white;
-            font-weight: 800;
-            font-size: 1rem;
-            margin-top: 20px;
         }
 
-        /* --- ANIMATION --- */
-        .tap-pop {
-            position: absolute;
-            pointer-events: none;
-            font-weight: 900;
-            font-size: 1.8rem;
-            color: #fff;
-            animation: tapMove 0.7s ease-out forwards;
-        }
-
-        @keyframes tapMove {
-            0% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(-120px); }
-        }
-
-        .rank-footer {
-            position: fixed;
-            bottom: 95px;
-            left: 15px;
-            right: 15px;
-            background: var(--accent-blue);
-            padding: 15px 20px;
-            border-radius: 15px;
+        /* --- LISTS --- */
+        .list-card {
+            background: var(--nav-bg);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
-            font-weight: bold;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            border: 1px solid var(--border-ui);
         }
-
     </style>
 </head>
 <body>
 
     <header class="global-header">
-        <div class="season-title" id="countdown">SEASON 02 CHALLENGE END IN<br>0D 00H 00M 00S</div>
-        <div class="subtitle">TAP, COMPETE & WIN MLBB DIAMOND</div>
+        <div style="font-weight: 900; font-size: 1rem;">SEASON 02 ENDS IN 3D 15H</div>
+        <div style="font-size: 0.7rem; color: var(--accent-blue); font-weight: bold; margin-top: 4px;">TAP & WIN DIAMONDS</div>
     </header>
 
     <main id="tapPage" class="page active-page">
-        <div class="top-row-btns">
-            <button class="utility-btn" onclick="openPopup('howToPlay')">❔ HOW TO PLAY</button>
-            <button class="utility-btn" onclick="openPopup('mlbbModal')">🎮 MLBB ID</button>
+        <div class="balance-box">
+            <h1 id="score">0</h1>
+            <p style="color: var(--accent-blue); font-weight: bold; font-size: 0.8rem;">MOBA COIN</p>
         </div>
 
-        <div class="balance-section">
-            <div class="coin-balance">
-                <div class="coin-icon-circle"></div>
-                <span id="coinCount">0</span>
+        <div class="coin-container">
+            <div id="coinBtn" class="moba-coin">
+                <div class="coin-text">MOBA<br>COIN</div>
             </div>
-            <div class="mc-label">MOBA COIN</div>
-        </div>
-
-        <div class="tap-center">
-            <div class="main-tap-btn" id="tapBtn">
-                <div class="tap-text">MOBA<br>COIN</div>
-            </div>
-
-            <div class="energy-wrapper">
-                <div class="energy-info">
+            
+            <div style="width: 100%; max-width: 250px; margin-top: 30px;">
+                <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:5px; font-weight:bold;">
                     <span>⚡ ENERGY</span>
-                    <span id="energyVal">500 / 500</span>
+                    <span>500/500</span>
                 </div>
-                <div class="energy-bar-bg">
-                    <div class="energy-bar-fill" id="energyFill"></div>
-                </div>
+                <div class="energy-bar"><div class="energy-fill"></div></div>
             </div>
         </div>
-
-        <button class="btn-primary" style="background: linear-gradient(90deg, #FF9500, #FFCC00);" onclick="openPopup('boostModal')">
-            🚀 ACTIVATE 3X BOOST
-        </button>
     </main>
 
     <main id="taskPage" class="page">
-        <h2 style="margin-bottom: 15px; font-size: 1.2rem;">DAILY CHECK IN</h2>
-        <div id="dailyList" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 30px;">
-            </div>
-
-        <h2 style="margin-bottom: 15px; font-size: 1.2rem;">ONE TIME TASK</h2>
-        <div class="card">
-            <div><p style="font-weight:bold">Join Community</p><p style="font-size:0.7rem; color:var(--text-gray)">+100 MC</p></div>
-            <button class="utility-btn" style="background:var(--accent-blue)" onclick="claimTask(this, 100)">JOIN</button>
+        <h3 style="margin-bottom:15px; color:var(--accent-blue);">TASKS</h3>
+        <div class="list-card">
+            <span>Join Telegram</span>
+            <span style="color:var(--accent-blue); font-weight:bold;">+100 MC</span>
         </div>
-        <div class="card">
-            <div><p style="font-weight:bold">Follow Page</p><p style="font-size:0.7rem; color:var(--text-gray)">+100 MC</p></div>
-            <button class="utility-btn" style="background:var(--accent-blue)" onclick="claimTask(this, 100)">FOLLOW</button>
-        </div>
-
-        <h2 style="margin-bottom: 15px; font-size: 1.2rem; margin-top: 20px;">REFERRAL TASK</h2>
-        <div class="card" style="flex-direction: column; align-items: flex-start; gap: 15px;">
-            <div style="display: flex; justify-content: space-between; width: 100%;">
-                <div><p style="font-weight:bold">Invite Friend</p><p style="font-size:0.7rem; color:var(--text-gray)">+10,000 MC (Req. 1000 MC Earned)</p></div>
-                <button class="utility-btn" style="background:var(--accent-blue)">INVITE</button>
-            </div>
-            <div style="width: 100%; display: grid; grid-template-columns: 1fr 1fr 1fr; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; text-align: center;">
-                <div><p id="refTotal">0</p><p style="font-size:0.5rem; color:var(--text-gray)">TOTAL</p></div>
-                <div><p id="refComp">0</p><p style="font-size:0.5rem; color:var(--text-gray)">COMPLETED</p></div>
-                <div><p id="refPend">0</p><p style="font-size:0.5rem; color:var(--text-gray)">PENDING</p></div>
-            </div>
+        <div class="list-card">
+            <span>Follow Twitter</span>
+            <span style="color:var(--accent-blue); font-weight:bold;">+100 MC</span>
         </div>
     </main>
 
     <main id="rankPage" class="page">
-        <h2 style="margin-bottom: 15px; font-size: 1.2rem;">REWARDS</h2>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 25px;">
-            <div class="card" style="margin:0; padding:10px; font-size:0.7rem;">Rank 1: 3x Weekly Pass</div>
-            <div class="card" style="margin:0; padding:10px; font-size:0.7rem;">Rank 2: 2x Weekly Pass</div>
-            <div class="card" style="margin:0; padding:10px; font-size:0.7rem;">Rank 3: 1x Weekly Pass</div>
-            <div class="card" style="margin:0; padding:10px; font-size:0.7rem;">Rank 4-5: 55 Diamonds</div>
+        <h3 style="margin-bottom:15px; color:var(--accent-blue);">LEADERBOARD</h3>
+        <div class="list-card">
+            <span>1. MythicPlayer</span>
+            <span style="color:var(--text-white); font-weight:bold;">1.2M MC</span>
         </div>
-
-        <h2 style="margin-bottom: 15px; font-size: 1.2rem;">TOP 30 PLAYERS</h2>
-        <div id="leaderboard" style="margin-bottom: 50px;">
-            </div>
-
-        <div class="rank-footer">
-            <span>#99+ YOU</span>
-            <span id="myRankScore">0 MC</span>
+        <div class="list-card" style="background: var(--accent-blue); border: none;">
+            <span style="font-weight: bold;">99+. YOU</span>
+            <span style="font-weight: bold;">0 MC</span>
         </div>
     </main>
 
     <nav class="nav-bar">
-        <a href="#" class="nav-btn active" onclick="showPage('tapPage', this)">
-            <span class="nav-icon">🪙</span><span class="nav-label">TAP</span>
+        <a href="#" class="nav-item active" onclick="switchTab('tapPage', this)">
+            <span class="nav-icon">🪙</span>
+            <span class="nav-label">Tap</span>
         </a>
-        <a href="#" class="nav-btn" onclick="showPage('taskPage', this)">
-            <span class="nav-icon">📋</span><span class="nav-label">TASK</span>
+        <a href="#" class="nav-item" onclick="switchTab('taskPage', this)">
+            <span class="nav-icon">📋</span>
+            <span class="nav-label">Task</span>
         </a>
-        <a href="#" class="nav-btn" onclick="showPage('rankPage', this)">
-            <span class="nav-icon">🏆</span><span class="nav-label">RANK</span>
+        <a href="#" class="nav-item" onclick="switchTab('rankPage', this)">
+            <span class="nav-icon">🏆</span>
+            <span class="nav-label">Rank</span>
         </a>
     </nav>
 
-    <div class="overlay" id="energyModal">
-        <div class="popup">
-            <span class="close-x" onclick="closePopup('energyModal')">&times;</span>
-            <h1 style="color:#ff4d4d; margin-bottom: 10px;">OUT OF ENERGY !</h1>
-            <p style="color:var(--text-gray)">Refill your energy instantly to keep earning coins.</p>
-            <button class="btn-primary" onclick="watchAd('energy')">WATCH VIDEO<br><span style="font-size:0.7rem">+100 ENERGY</span></button>
-        </div>
-    </div>
-
-    <div class="overlay" id="boostModal">
-        <div class="popup">
-            <span class="close-x" onclick="closePopup('boostModal')">&times;</span>
-            <h1 style="color:var(--accent-gold); margin-bottom: 10px;">BOOST MOBA COIN</h1>
-            <p style="color:var(--text-gray)">Activate 3X Multiplier for 10 seconds!</p>
-            <button class="btn-primary" onclick="watchAd('boost')">WATCH VIDEO</button>
-        </div>
-    </div>
-
-    <div class="overlay" id="mlbbModal">
-        <div class="popup">
-            <span class="close-x" onclick="closePopup('mlbbModal')">&times;</span>
-            <h2>MLBB ID</h2>
-            <input type="text" id="mName" placeholder="In Game Name" style="width:100%; padding:12px; margin-top:20px; border-radius:10px; border:1px solid #333; background:#0a122a; color:white;">
-            <div style="display:flex; gap:10px; margin-top:10px;">
-                <input type="number" id="mId" placeholder="User ID" style="width:60%; padding:12px; border-radius:10px; border:1px solid #333; background:#0a122a; color:white;">
-                <input type="number" id="mSrv" placeholder="Server" style="width:40%; padding:12px; border-radius:10px; border:1px solid #333; background:#0a122a; color:white;">
-            </div>
-            <button class="btn-primary" onclick="saveMLBB()">SAVE CHANGES</button>
-        </div>
-    </div>
-
-    <div class="overlay" id="howToPlay">
-        <div class="popup">
-            <span class="close-x" onclick="closePopup('howToPlay')">&times;</span>
-            <h2>HOW TO PLAY</h2>
-            <ul style="text-align:left; color:var(--text-gray); margin-top:15px; font-size:0.9rem; line-height:1.6">
-                <li>Tap the coin to earn MC.</li>
-                <li>1 Tap = 1 Energy.</li>
-                <li>Boost gives 3x coins per tap.</li>
-                <li>Top 20 win MLBB Diamonds weekly!</li>
-            </ul>
-            <button class="btn-primary" onclick="closePopup('howToPlay')">GOT IT</button>
-        </div>
-    </div>
-
     <script>
-        // Data State
-        let coins = parseInt(localStorage.getItem('mc_total')) || 0;
-        let energy = parseInt(localStorage.getItem('mc_energy')) || 500;
-        let isBoosted = false;
-        let boostTimer = null;
-
-        const SEASON_END = new Date().getTime() + (3 * 24 * 60 * 60 * 1000) + (15 * 60 * 60 * 1000);
-
-        // Init
-        function init() {
-            updateUI();
-            startCountdown();
-            renderDaily();
-            renderLeaderboard();
-            
-            // Energy Regen
-            setInterval(() => {
-                if(energy < 500) { energy++; updateUI(); }
-            }, 3000);
-        }
-
-        // Gameplay
-        document.getElementById('tapBtn').addEventListener('touchstart', (e) => {
+        let score = 0;
+        const scoreEl = document.getElementById('score');
+        
+        document.getElementById('coinBtn').addEventListener('touchstart', (e) => {
             e.preventDefault();
-            if(energy <= 0) { openPopup('energyModal'); return; }
-
-            const reward = isBoosted ? 3 : 1;
-            coins += reward;
-            energy -= 1;
-            
-            // Animation
-            const touch = e.touches[0];
-            createPop(touch.clientX, touch.clientY, `+${reward}`);
-            
-            updateUI();
-            save();
+            score++;
+            scoreEl.innerText = score.toLocaleString();
         });
 
-        function updateUI() {
-            document.getElementById('coinCount').innerText = coins.toLocaleString();
-            document.getElementById('energyVal').innerText = `${energy} / 500`;
-            document.getElementById('energyFill').style.width = `${(energy/500)*100}%`;
-            document.getElementById('myRankScore').innerText = `${coins.toLocaleString()} MC`;
-        }
-
-        function createPop(x, y, txt) {
-            const p = document.createElement('div');
-            p.className = 'tap-pop';
-            p.innerText = txt;
-            p.style.left = x + 'px';
-            p.style.top = y + 'px';
-            document.body.appendChild(p);
-            setTimeout(() => p.remove(), 700);
-        }
-
-        // Systems
-        function watchAd(type) {
-            const btn = event.target;
-            btn.innerText = "LOADING...";
-            setTimeout(() => {
-                if(type === 'energy') energy = Math.min(500, energy + 100);
-                if(type === 'boost') startBoost();
-                btn.innerText = "WATCH VIDEO";
-                closePopup(type === 'energy' ? 'energyModal' : 'boostModal');
-                updateUI();
-            }, 1000);
-        }
-
-        function startBoost() {
-            isBoosted = true;
-            document.getElementById('tapBtn').classList.add('boost-glow');
-            clearTimeout(boostTimer);
-            boostTimer = setTimeout(() => {
-                isBoosted = false;
-                document.getElementById('tapBtn').classList.remove('boost-glow');
-            }, 10000);
-        }
-
-        function startCountdown() {
-            setInterval(() => {
-                const now = new Date().getTime();
-                const d = SEASON_END - now;
-                const days = Math.floor(d / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((d % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const mins = Math.floor((d % (1000 * 60 * 60)) / (1000 * 60));
-                const secs = Math.floor((d % (1000 * 60)) / 1000);
-                document.getElementById('countdown').innerHTML = `SEASON 02 CHALLENGE END IN<br>${days}D ${hours}H ${mins}M ${secs}S`;
-            }, 1000);
-        }
-
-        function renderDaily() {
-            const container = document.getElementById('dailyList');
-            for(let i=1; i<=7; i++) {
-                container.innerHTML += `
-                    <div class="card" style="flex-direction:column; margin:0; padding:10px; font-size:0.6rem; gap:5px" onclick="claimDaily(this, ${i*100})">
-                        <span>DAY ${i}</span>
-                        <span style="color:var(--accent-gold)">+${i*100}</span>
-                    </div>
-                `;
-            }
-        }
-
-        function renderLeaderboard() {
-            const lb = document.getElementById('leaderboard');
-            const mocks = [
-                {n: "ELITE_PLAYER", s: 1250000}, {n: "ML_GOD", s: 980000}, {n: "NANA_FAN", s: 850000},
-                {n: "SKY_WALKER", s: 720000}, {n: "MOBA_KING", s: 650000}
-            ];
-            lb.innerHTML = mocks.map((m, i) => `
-                <div class="card">
-                    <span style="font-weight:bold; color:var(--text-gray); width:30px">${i+1}</span>
-                    <span style="flex:1; font-weight:bold">${m.n}</span>
-                    <span style="color:var(--accent-gold); font-weight:bold">${m.s.toLocaleString()} MC</span>
-                </div>
-            `).join('');
-        }
-
-        // Helpers
-        function showPage(id, el) {
+        function switchTab(pageId, element) {
+            // Remove active classes
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(id).classList.add('active-page');
-            el.classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            // Set active
+            document.getElementById(pageId).classList.add('active-page');
+            element.classList.add('active');
         }
-        function openPopup(id) { document.getElementById(id).style.display = 'flex'; }
-        function closePopup(id) { document.getElementById(id).style.display = 'none'; }
-        function save() { localStorage.setItem('mc_total', coins); localStorage.setItem('mc_energy', energy); }
-        function claimTask(btn, amt) { btn.innerText = "CLAIMED"; btn.disabled = true; coins += amt; updateUI(); save(); }
-        function claimDaily(el, amt) { el.style.opacity = "0.5"; el.onclick = null; coins += amt; updateUI(); save(); }
-        function saveMLBB() { alert("ID Updated!"); closePopup('mlbbModal'); }
-
-        init();
     </script>
 </body>
 </html>
