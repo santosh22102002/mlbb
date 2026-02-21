@@ -1,326 +1,566 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>MLBB Tap Challenge</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOBA Coin</title>
 
 <style>
+
+/* BASE */
+
 body{
-    font-family: Arial, sans-serif;
-    background:#f4f4f4;
-    margin:0;
-    text-align:center;
+margin:0;
+font-family:Arial,Helvetica,sans-serif;
+background:linear-gradient(180deg,#18222f,#0f1720);
+color:white;
+display:flex;
+justify-content:center;
 }
 
-.container{
-    max-width:400px;
-    margin:auto;
-    background:white;
-    padding:15px;
-    min-height:100vh;
+.app{
+width:390px;
+height:100vh;
+position:relative;
+overflow:hidden;
 }
+
+/* PAGE */
+
+.page{
+position:absolute;
+width:100%;
+height:100%;
+overflow-y:auto;
+}
+
+/* HEADER */
 
 .header{
-    font-weight:bold;
-    font-size:14px;
+text-align:center;
+padding-top:25px;
 }
 
-.timer{
-    font-size:12px;
-    margin-bottom:5px;
+.season{
+font-weight:bold;
+font-size:20px;
 }
 
-.reward{
-    font-size:12px;
-    margin-bottom:15px;
+.sub{
+font-size:13px;
+opacity:0.7;
+margin-top:5px;
 }
 
-.score{
-    font-size:48px;
-    font-weight:bold;
+/* COIN DISPLAY */
+
+.coin-row{
+display:flex;
+justify-content:center;
+align-items:center;
+gap:10px;
+margin-top:15px;
 }
 
-.tap-btn{
-    width:250px;
-    height:250px;
-    border-radius:50%;
-    border:3px solid black;
-    font-size:32px;
-    font-weight:bold;
-    margin:20px auto;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    cursor:pointer;
-    user-select:none;
+.mc{
+width:45px;
+height:45px;
+border-radius:50%;
+background:linear-gradient(145deg,#3aa6ff,#0b5fa8);
+display:flex;
+align-items:center;
+justify-content:center;
+font-weight:bold;
 }
 
-.energy{
-    font-size:14px;
+.coin-text{
+font-size:48px;
+font-weight:bold;
 }
 
-.bar{
-    height:10px;
-    background:#ddd;
-    margin:5px;
-    border-radius:5px;
+/* BUTTON ROW */
+
+.middle{
+display:flex;
+justify-content:space-between;
+padding:0 40px;
+margin-top:15px;
 }
 
-.bar-fill{
-    height:10px;
-    background:black;
-    width:100%;
+.circle{
+width:60px;
+height:60px;
+border-radius:50%;
+background:#2b3545;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:20px;
+cursor:pointer;
 }
 
-.btn{
-    padding:10px;
-    margin:5px;
-    border:2px solid black;
-    background:white;
-    cursor:pointer;
+.circle-label{
+text-align:center;
+font-size:12px;
+opacity:0.7;
+margin-top:5px;
 }
+
+/* TAP BUTTON */
+
+.tap-container{
+display:flex;
+justify-content:center;
+margin-top:20px;
+}
+
+.tap{
+width:260px;
+height:260px;
+border-radius:50%;
+border:none;
+background:radial-gradient(circle,#3aa6ff,#0b5fa8);
+color:rgba(255,255,255,0.3);
+font-size:40px;
+font-weight:bold;
+box-shadow:0 0 40px rgba(0,0,0,0.6);
+}
+
+.tap.boost{
+box-shadow:0 0 40px #3aa6ff;
+}
+
+/* ENERGY */
+
+.energy-row{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:20px;
+}
+
+.energy-bar{
+width:200px;
+height:10px;
+background:#2b3545;
+border-radius:10px;
+overflow:hidden;
+margin-top:5px;
+}
+
+.energy-fill{
+height:100%;
+background:white;
+width:80%;
+}
+
+.boost-btn{
+background:#2b3545;
+border:none;
+color:white;
+padding:12px 20px;
+border-radius:20px;
+cursor:pointer;
+}
+
+/* SECTION */
+
+.section{
+padding:20px;
+}
+
+.section-title{
+font-weight:bold;
+margin-bottom:10px;
+}
+
+.card{
+background:#2b3545;
+padding:15px;
+border-radius:15px;
+margin-bottom:15px;
+}
+
+/* TASK */
+
+.task-row{
+display:flex;
+justify-content:space-between;
+margin-bottom:10px;
+}
+
+.claim{
+background:#1f2a38;
+border:none;
+color:white;
+padding:5px 15px;
+border-radius:15px;
+}
+
+.go{
+background:#3aa6ff;
+border:none;
+color:white;
+padding:5px 15px;
+border-radius:15px;
+}
+
+/* NAV */
 
 .nav{
-    margin-top:10px;
+position:absolute;
+bottom:10px;
+width:100%;
+display:flex;
+justify-content:center;
+}
+
+.nav-inner{
+width:90%;
+background:#243041;
+border-radius:25px;
+display:flex;
+overflow:hidden;
+}
+
+.nav button{
+flex:1;
+padding:15px;
+border:none;
+background:none;
+color:white;
+font-size:16px;
+}
+
+.active{
+color:#3aa6ff;
+}
+
+/* POPUP */
+
+.popup{
+position:fixed;
+top:0;
+left:0;
+right:0;
+bottom:0;
+background:rgba(0,0,0,0.7);
+display:flex;
+justify-content:center;
+align-items:center;
+}
+
+.popup-box{
+background:#2b3545;
+padding:25px;
+border-radius:20px;
+width:80%;
+text-align:center;
+position:relative;
+}
+
+.popup-close{
+position:absolute;
+right:15px;
+top:10px;
+cursor:pointer;
+}
+
+/* FLOAT */
+
+.float{
+position:absolute;
+color:#3aa6ff;
+animation:float 1s forwards;
+}
+
+@keyframes float{
+to{transform:translateY(-60px);opacity:0;}
 }
 
 .hidden{
-    display:none;
+display:none;
 }
 
-.list{
-    text-align:left;
-}
-
-.popup{
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    background:rgba(0,0,0,0.5);
-    display:none;
-    justify-content:center;
-    align-items:center;
-}
-
-.popup-content{
-    background:white;
-    padding:20px;
-    width:300px;
-}
-
-.close{
-    float:right;
-    cursor:pointer;
-}
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="app">
 
-<div class="header">WEEKLY CHALLENGE</div>
-<div class="timer" id="timer">Ends in 7D 0H</div>
-<div class="reward">
-TOP 15<br>
-MLBB Weekly Diamond Pass
+<!-- TAP PAGE -->
+
+<div id="tapPage" class="page">
+
+<div class="header">
+<div class="season">SEASON 01 CHALLENGE END IN<br><span id="timer">3D</span></div>
+<div class="sub">TAP, COMPETE & WIN MLBB DIAMOND</div>
 </div>
 
-<div id="tapPage">
-
-<div class="score" id="score">0</div>
-
-<div class="tap-btn" onclick="tap()">TAP</div>
-
-<div class="energy">
-⚡ <span id="energy">500</span>/500
+<div class="coin-row">
+<div class="mc">MC</div>
+<div id="coinText" class="coin-text">5000</div>
 </div>
 
-<div class="bar">
-<div class="bar-fill" id="energyBar"></div>
+<div class="middle">
+
+<div>
+<div class="circle" onclick="openHow()">?</div>
+<div class="circle-label">HOW TO PLAY</div>
 </div>
 
-<button class="btn" onclick="watchAd()">+ Energy (Ad)</button>
-<button class="btn" onclick="doubleCoin()">2× Boost</button>
-
-</div>
-
-<div id="earnPage" class="hidden">
-
-<div class="btn" onclick="dailyLogin()">Daily Login (+1000)</div>
-
-<div class="btn" onclick="referral()">
-Invite Friend<br>
-Earn 10,000 coins per new friend<br>
-Friend must reach 2,000 coins
+<div>
+<div class="circle" onclick="openMLBB()">ID</div>
+<div class="circle-label">MLBB</div>
 </div>
 
 </div>
 
-<div id="leaderboardPage" class="hidden">
-<div class="list" id="leaderboard"></div>
+<div class="tap-container">
+<button id="tapBtn" class="tap">MOBA<br>COIN</button>
 </div>
+
+<div class="energy-row">
+
+<div>
+<div id="energyText">400/500 ENERGY</div>
+<div class="energy-bar">
+<div id="energyFill" class="energy-fill"></div>
+</div>
+</div>
+
+<button onclick="openBoost()" class="boost-btn">3X COIN</button>
+
+</div>
+
+</div>
+
+<!-- TASK PAGE -->
+
+<div id="taskPage" class="page hidden">
+
+<div class="header">
+<div class="season">SEASON 01 CHALLENGE</div>
+<div class="sub">TASK</div>
+</div>
+
+<div class="section">
+
+<div class="section-title">DAILY CHECK IN</div>
+
+<div class="card">
+DAY 1 → 100 MC<br>
+DAY 2 → 200 MC<br>
+DAY 3 → 300 MC<br><br>
+<button class="claim" onclick="claimDaily()">CLAIM</button>
+</div>
+
+<div class="section-title">REFERRAL</div>
+
+<div class="card">
+INVITE FRIEND +10000 MC<br>
+<button class="go">GO</button>
+</div>
+
+</div>
+
+</div>
+
+<!-- RANK PAGE -->
+
+<div id="rankPage" class="page hidden">
+
+<div class="header">
+<div class="season">CURRENT TOP 20</div>
+</div>
+
+<div class="section">
+
+<div class="card" id="leaderboard"></div>
+
+<div class="section-title">YOUR RANK</div>
+
+<div class="card">
+675. YOU — 5000 MC
+</div>
+
+</div>
+
+</div>
+
+<!-- NAV -->
 
 <div class="nav">
-<button class="btn" onclick="showPage('tap')">TAP</button>
-<button class="btn" onclick="showPage('earn')">EARN</button>
-<button class="btn" onclick="showPage('leaderboard')">LEADERBOARD</button>
-<button class="btn" onclick="openHelp()">HELP</button>
-<button class="btn" onclick="openMLBB()">MLBB ID</button>
-</div>
-
-</div>
-
-<!-- HELP POPUP -->
-<div class="popup" id="helpPopup">
-<div class="popup-content">
-<span class="close" onclick="closeHelp()">X</span>
-<h3>Game Rules</h3>
-<p>
-Tap to earn coins.<br>
-Coins become your Weekly Score.<br>
-Top 15 players win MLBB Weekly Diamond Pass.<br>
-Challenge resets every 7 days.<br>
-Referral reward unlocks when friend reaches 2000 coins.<br>
-</p>
+<div class="nav-inner">
+<button id="navTap" class="active" onclick="showPage('tapPage')">TAP</button>
+<button id="navTask" onclick="showPage('taskPage')">TASK</button>
+<button id="navRank" onclick="showPage('rankPage')">RANK</button>
 </div>
 </div>
 
-<!-- MLBB POPUP -->
-<div class="popup" id="mlbbPopup">
-<div class="popup-content">
-<span class="close" onclick="closeMLBB()">X</span>
-<h3>MLBB ID</h3>
-<input placeholder="Server ID"><br><br>
-<input placeholder="User ID"><br><br>
-<input placeholder="In Game Name"><br><br>
-<button class="btn">Save</button>
+</div>
+
+<!-- POPUPS -->
+
+<div id="energyPopup" class="popup hidden">
+<div class="popup-box">
+<div class="popup-close" onclick="closeEnergy()">✕</div>
+<h2>OUT OF ENERGY</h2>
++100 ENERGY<br><br>
+<button onclick="watchEnergy()">WATCH VIDEO</button>
+</div>
+</div>
+
+<div id="boostPopup" class="popup hidden">
+<div class="popup-box">
+<div class="popup-close" onclick="closeBoost()">✕</div>
+<h2>BOOST MOBA COIN</h2>
+3X COIN<br><br>
+<button onclick="watchBoost()">WATCH VIDEO</button>
+</div>
+</div>
+
+<div id="howPopup" class="popup hidden">
+<div class="popup-box">
+<div class="popup-close" onclick="closeHow()">✕</div>
+<h2>HOW TO PLAY</h2>
+Tap coin to earn.<br>
+Watch ads for energy.<br>
+Watch ads for 3X boost.<br>
+Reach Top 20 for rewards.
+</div>
+</div>
+
+<div id="mlbbPopup" class="popup hidden">
+<div class="popup-box">
+<div class="popup-close" onclick="closeMLBB()">✕</div>
+<h2>MLBB ID</h2>
+User ID: 12345678<br>
+Server ID: 1234<br>
+Name: PLAYER
 </div>
 </div>
 
 <script>
 
-// STATE
-let score=0;
-let energy=500;
-let maxEnergy=500;
+/* STATE */
+
+let coin=5000;
+let energy=400;
 let boost=false;
+let boostEnd=0;
 
-// TAP
-function tap(){
-    if(energy<=0) return;
+/* TAP */
 
-    let value=boost?2:1;
-    score+=value;
-    energy--;
+tapBtn.onclick=(e)=>{
 
-    update();
+if(energy<=0){
+energyPopup.classList.remove("hidden");
+return;
 }
 
-// UPDATE UI
-function update(){
-    document.getElementById("score").innerText=score;
-    document.getElementById("energy").innerText=energy;
-    document.getElementById("energyBar").style.width=(energy/maxEnergy*100)+"%";
+let gain=boost?3:1;
+
+coin+=gain;
+energy--;
+
+coinText.innerText=coin;
+energyText.innerText=energy+"/500 ENERGY";
+energyFill.style.width=(energy/500*100)+"%";
+
+let f=document.createElement("div");
+f.className="float";
+f.innerText="+"+gain;
+f.style.left=e.pageX+"px";
+f.style.top=e.pageY+"px";
+document.body.appendChild(f);
+setTimeout(()=>f.remove(),1000);
+
+};
+
+/* BOOST */
+
+function openBoost(){boostPopup.classList.remove("hidden");}
+function closeBoost(){boostPopup.classList.add("hidden");}
+
+function watchBoost(){
+
+boost=true;
+boostEnd=Date.now()+10000;
+tapBtn.classList.add("boost");
+closeBoost();
+
 }
 
-// ENERGY AD
-function watchAd(){
-    energy=Math.min(maxEnergy,energy+200);
-    update();
+setInterval(()=>{
+
+if(boost && Date.now()>boostEnd){
+boost=false;
+tapBtn.classList.remove("boost");
 }
 
-// BOOST
-function doubleCoin(){
-    boost=true;
-    setTimeout(()=>boost=false,60000);
+},100);
+
+/* ENERGY */
+
+function closeEnergy(){energyPopup.classList.add("hidden");}
+
+function watchEnergy(){
+
+energy+=100;
+if(energy>500)energy=500;
+
+energyText.innerText=energy+"/500 ENERGY";
+energyFill.style.width=(energy/500*100)+"%";
+
+closeEnergy();
+
 }
 
-// DAILY LOGIN
-function dailyLogin(){
-    score+=1000;
-    update();
-}
+/* NAV */
 
-// REFERRAL
-function referral(){
-    alert("Referral reward will be granted when friend reaches 2000 coins.");
-}
-
-// PAGE NAV
 function showPage(p){
-    document.getElementById("tapPage").classList.add("hidden");
-    document.getElementById("earnPage").classList.add("hidden");
-    document.getElementById("leaderboardPage").classList.add("hidden");
 
-    if(p==="tap") document.getElementById("tapPage").classList.remove("hidden");
-    if(p==="earn") document.getElementById("earnPage").classList.remove("hidden");
-    if(p==="leaderboard") document.getElementById("leaderboardPage").classList.remove("hidden");
+tapPage.classList.add("hidden");
+taskPage.classList.add("hidden");
+rankPage.classList.add("hidden");
+
+document.getElementById(p).classList.remove("hidden");
+
+navTap.classList.remove("active");
+navTask.classList.remove("active");
+navRank.classList.remove("active");
+
+if(p=="tapPage")navTap.classList.add("active");
+if(p=="taskPage")navTask.classList.add("active");
+if(p=="rankPage")navRank.classList.add("active");
+
 }
 
-// POPUPS
-function openHelp(){
-    document.getElementById("helpPopup").style.display="flex";
-}
-function closeHelp(){
-    document.getElementById("helpPopup").style.display="none";
-}
+/* POPUPS */
 
-function openMLBB(){
-    document.getElementById("mlbbPopup").style.display="flex";
-}
-function closeMLBB(){
-    document.getElementById("mlbbPopup").style.display="none";
-}
+function openHow(){howPopup.classList.remove("hidden");}
+function closeHow(){howPopup.classList.add("hidden");}
 
-// LEADERBOARD SAMPLE
-let players=[
-{name:"ALEX",score:593908},
-{name:"TOM",score:571334},
-{name:"JOHN",score:548760},
-{name:"LUCY",score:527419},
-{name:"ROCK",score:479556},
-{name:"PAUL",score:458903},
-{name:"SHELBY",score:436195},
-{name:"BILL",score:412638},
-{name:"ELON",score:389770},
-{name:"JOSEPH",score:367224},
-{name:"ROCKY",score:349581},
-{name:"BOB",score:333906},
-{name:"HERO",score:318745},
-{name:"ANGELA",score:304892},
-{name:"NANA",score:299870},
-];
+function openMLBB(){mlbbPopup.classList.remove("hidden");}
+function closeMLBB(){mlbbPopup.classList.add("hidden");}
 
-function renderLeaderboard(){
-    let html="";
-    players.forEach((p,i)=>{
-        html+=`${i+1}. ${p.name} — ${p.score}<br>`;
-    });
-    html+=`<br>Your Rank: 4800`;
-    document.getElementById("leaderboard").innerHTML=html;
+/* TASK */
+
+function claimDaily(){
+coin+=100;
+coinText.innerText=coin;
 }
 
-renderLeaderboard();
-update();
+/* LEADERBOARD */
 
-// TIMER
-let end=new Date();
-end.setDate(end.getDate()+7);
+let names=["MIKASA","EREN","ZILONG","HARRY","POTTER"];
 
-function updateTimer(){
-    let now=new Date();
-    let diff=end-now;
-    let d=Math.floor(diff/(1000*60*60*24));
-    let h=Math.floor((diff/(1000*60*60))%24);
-    document.getElementById("timer").innerText=`Ends in ${d}D ${h}H`;
+let html="";
+for(let i=0;i<names.length;i++){
+html+=(i+1)+". "+names[i]+" — "+(999999-i*10000)+" MC<br>";
 }
-
-setInterval(updateTimer,1000);
-updateTimer();
+leaderboard.innerHTML=html;
 
 </script>
 
