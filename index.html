@@ -1,261 +1,561 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MOBA Coin UI</title>
+<title>MOBA Coin</title>
 
 <style>
 
-*{
-    box-sizing:border-box;
-}
+/* =========================
+   GLOBAL THEME
+========================= */
 
 body{
-    margin:0;
-    background:#0f1720;
-    font-family:Arial, Helvetica, sans-serif;
-    color:#ffffff;
+margin:0;
+font-family:Arial,Helvetica,sans-serif;
+background:linear-gradient(180deg,#18222f,#0b1118);
+color:white;
+display:flex;
+justify-content:center;
 }
 
-/* MOBILE CONTAINER */
-.container{
-    width:100%;
-    max-width:430px;
-    min-width:360px;
-    margin:auto;
-    padding:16px;
-    background:linear-gradient(180deg,#1c2a39,#0f1720);
-    min-height:100vh;
-    text-align:center;
+.app{
+width:390px;
+height:100vh;
+position:relative;
+overflow:hidden;
 }
 
-/* header */
-.title{
-    font-size:18px;
-    font-weight:700;
+/* =========================
+   GLOBAL HEADER
+========================= */
+
+.header{
+text-align:center;
+padding-top:20px;
+}
+
+.season-title{
+font-weight:bold;
+font-size:18px;
+}
+
+.season-timer{
+font-size:16px;
+margin-top:3px;
 }
 
 .subtitle{
-    font-size:12px;
-    color:#cfd8dc;
-    margin-top:4px;
+font-size:12px;
+opacity:0.7;
+margin-top:3px;
 }
 
-/* balance */
-.balance{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:10px;
-    margin-top:16px;
+/* =========================
+   PAGE SYSTEM
+========================= */
+
+.page{
+position:absolute;
+top:80px;
+left:0;
+width:100%;
+bottom:70px;
+overflow-y:auto;
+padding-bottom:20px;
 }
 
-/* SMALL COIN */
-.mc{
-    width:34px;
-    height:34px;
-    border-radius:50%;
-    background:#2f95d6;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    position:relative;
+.hidden{
+display:none;
 }
 
-.mc::before{
-    content:"";
-    position:absolute;
-    width:26px;
-    height:26px;
-    border-radius:50%;
-    background:#1f7fbd;
+/* =========================
+   TAP PAGE
+========================= */
+
+.coin-display{
+display:flex;
+justify-content:center;
+align-items:center;
+gap:10px;
+margin-top:15px;
 }
 
-.mc span{
-    position:relative;
-    font-size:10px;
-    font-weight:bold;
-    color:rgba(255,255,255,0.5);
-}
-
-.amount{
-    font-size:40px;
-    font-weight:700;
-}
-
-/* buttons */
-.row{
-    display:flex;
-    justify-content:space-between;
-    margin-top:14px;
-    padding:0 10px;
-}
-
-.circle-btn{
-    width:54px;
-    height:54px;
-    border-radius:50%;
-    background:#2a3441;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:22px;
-}
-
-.btn-label{
-    font-size:11px;
-    margin-top:4px;
-    color:#cfd8dc;
-}
-
-/* BIG COIN MOBILE SIZE */
-.coin{
-    width:70vw;
-    max-width:260px;
-    height:70vw;
-    max-height:260px;
-    border-radius:50%;
-    background:#2f95d6;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    position:relative;
-    margin:20px auto;
-}
-
-.coin::before{
-    content:"";
-    position:absolute;
-    width:78%;
-    height:78%;
-    border-radius:50%;
-    background:#1f7fbd;
+.mc-icon{
+width:40px;
+height:40px;
+border-radius:50%;
+background:linear-gradient(145deg,#3aa6ff,#0b5fa8);
+display:flex;
+align-items:center;
+justify-content:center;
+font-weight:bold;
 }
 
 .coin-text{
-    position:relative;
-    color:rgba(255,255,255,0.25);
-    font-weight:bold;
-    text-align:center;
-    font-size:6vw;
-    max-font-size:36px;
-    letter-spacing:2px;
+font-size:42px;
+font-weight:bold;
 }
 
-/* energy */
-.energy{
-    text-align:left;
-    margin-top:10px;
+.circle-row{
+display:flex;
+justify-content:space-between;
+padding:0 50px;
+margin-top:15px;
 }
 
-.energy-text{
-    font-size:16px;
+.circle{
+width:60px;
+height:60px;
+border-radius:50%;
+background:#263241;
+display:flex;
+align-items:center;
+justify-content:center;
+cursor:pointer;
 }
+
+.circle-label{
+text-align:center;
+font-size:12px;
+opacity:0.7;
+margin-top:5px;
+}
+
+.tap-container{
+display:flex;
+justify-content:center;
+margin-top:20px;
+}
+
+.tap-btn{
+width:260px;
+height:260px;
+border-radius:50%;
+border:none;
+background:radial-gradient(circle,#3aa6ff,#0b5fa8);
+color:rgba(255,255,255,0.3);
+font-size:38px;
+font-weight:bold;
+box-shadow:0 0 40px rgba(0,0,0,0.6);
+cursor:pointer;
+}
+
+.tap-btn.boost{
+box-shadow:0 0 30px #3aa6ff;
+}
+
+/* =========================
+   ENERGY
+========================= */
 
 .energy-row{
-    display:flex;
-    align-items:center;
-    gap:8px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:15px 20px;
 }
 
-.bar{
-    flex:1;
-    height:8px;
-    background:#2a3441;
-    border-radius:10px;
+.energy-bar{
+width:200px;
+height:10px;
+background:#263241;
+border-radius:10px;
+overflow:hidden;
+margin-top:4px;
 }
 
-.fill{
-    width:76%;
-    height:100%;
-    background:#ffffff;
+.energy-fill{
+height:100%;
+background:white;
+width:100%;
 }
 
-.x3{
-    background:#2a3441;
-    padding:8px 14px;
-    border-radius:20px;
-    font-weight:700;
-    font-size:14px;
+.boost-button{
+background:#263241;
+border:none;
+color:white;
+padding:10px 18px;
+border-radius:20px;
+cursor:pointer;
 }
 
-/* nav */
+/* =========================
+   TASK & RANK
+========================= */
+
+.section{
+padding:15px;
+}
+
+.card{
+background:#263241;
+border-radius:15px;
+padding:12px;
+margin-bottom:12px;
+}
+
+.row{
+display:flex;
+justify-content:space-between;
+margin-bottom:6px;
+}
+
+.btn{
+padding:5px 12px;
+border-radius:12px;
+border:none;
+cursor:pointer;
+}
+
+.claim{background:#1f2a38;color:white;}
+.go{background:#3aa6ff;color:white;}
+
+/* =========================
+   NAVIGATION
+========================= */
+
 .nav{
-    margin-top:20px;
-    background:#2a3441;
-    border-radius:20px;
-    display:flex;
-    justify-content:space-around;
-    padding:12px;
+position:absolute;
+bottom:10px;
+width:100%;
+display:flex;
+justify-content:center;
 }
 
-.nav span{
-    color:#cfd8dc;
-    font-weight:600;
-    font-size:14px;
+.nav-inner{
+width:90%;
+background:#263241;
+border-radius:25px;
+display:flex;
 }
 
-.nav .active{
-    color:#2f95d6;
+.nav-inner button{
+flex:1;
+padding:14px;
+border:none;
+background:none;
+color:white;
+font-size:15px;
+cursor:pointer;
+}
+
+.active{
+color:#3aa6ff;
+}
+
+/* =========================
+   POPUP
+========================= */
+
+.popup{
+position:absolute;
+top:0;
+left:0;
+right:0;
+bottom:0;
+background:rgba(0,0,0,0.7);
+display:flex;
+justify-content:center;
+align-items:center;
+}
+
+.popup-box{
+background:#263241;
+border-radius:20px;
+padding:20px;
+width:80%;
+text-align:center;
+position:relative;
+}
+
+.close{
+position:absolute;
+right:12px;
+top:8px;
+cursor:pointer;
+}
+
+/* =========================
+   FLOAT ANIMATION
+========================= */
+
+.float{
+position:absolute;
+color:#3aa6ff;
+font-weight:bold;
+animation:floatUp 1s forwards;
+}
+
+@keyframes floatUp{
+to{transform:translateY(-50px);opacity:0;}
 }
 
 </style>
 </head>
+
 <body>
 
-<div class="container">
+<div class="app">
 
-    <div class="title">
-        SEASON 01 CHALLENGE END IN<br>
-        3D 15H 30S
-    </div>
+<!-- HEADER -->
+<div class="header">
+<div class="season-title">SEASON 02 CHALLENGE END IN</div>
+<div id="seasonTimer" class="season-timer">7D 00H 00M</div>
+<div class="subtitle">TAP, COMPETE & WIN MLBB DIAMOND</div>
+</div>
 
-    <div class="subtitle">
-        TAP, COMPETE & WIN MLBB DIAMOND
-    </div>
+<!-- TAP PAGE -->
+<div id="tapPage" class="page">
 
-    <div class="balance">
-        <div class="mc"><span>MC</span></div>
-        <div class="amount">5000</div>
-    </div>
+<div class="coin-display">
+<div class="mc-icon">MC</div>
+<div id="coinText" class="coin-text">0</div>
+</div>
 
-    <div class="row">
-        <div>
-            <div class="circle-btn">?</div>
-            <div class="btn-label">HOW TO PLAY</div>
-        </div>
+<div class="circle-row">
 
-        <div>
-            <div class="circle-btn">ID</div>
-            <div class="btn-label">MLBB</div>
-        </div>
-    </div>
+<div>
+<div class="circle" onclick="showPopup('howPopup')">?</div>
+<div class="circle-label">HOW TO PLAY</div>
+</div>
 
-    <div class="coin">
-        <div class="coin-text">
-            MOBA<br>COIN
-        </div>
-    </div>
-
-    <div class="energy">
-        <div class="energy-text">380/500 ENERGY</div>
-
-        <div class="energy-row">
-            <div class="bar">
-                <div class="fill"></div>
-            </div>
-            <div class="x3">3X COIN</div>
-        </div>
-    </div>
-
-    <div class="nav">
-        <span class="active">TAP</span>
-        <span>TASK</span>
-        <span>RANK</span>
-    </div>
+<div>
+<div class="circle" onclick="showPopup('mlbbPopup')">ID</div>
+<div class="circle-label">MLBB ID</div>
+</div>
 
 </div>
+
+<div class="tap-container">
+<button id="tapBtn" class="tap-btn">MOBA<br>COIN</button>
+</div>
+
+<div class="energy-row">
+
+<div>
+<div id="energyText">500/500 ENERGY</div>
+<div class="energy-bar">
+<div id="energyFill" class="energy-fill"></div>
+</div>
+</div>
+
+<button class="boost-button" onclick="showPopup('boostPopup')">
+3X COIN
+</button>
+
+</div>
+
+</div>
+
+<!-- TASK PAGE -->
+<div id="taskPage" class="page hidden">
+
+<div class="section">
+
+<div class="card">
+Daily Check-in<br><br>
+<button class="btn claim" onclick="addCoin(100)">CLAIM +100</button>
+</div>
+
+<div class="card">
+Join Community +100 MC
+<button class="btn claim" onclick="addCoin(100)">CLAIM</button>
+</div>
+
+<div class="card">
+Invite Friend +10000 MC
+<button class="btn go">GO</button>
+</div>
+
+</div>
+
+</div>
+
+<!-- RANK PAGE -->
+<div id="rankPage" class="page hidden">
+
+<div class="section">
+
+<div class="card">
+#1 3× Weekly Pass<br>
+#2 2× Weekly Pass<br>
+#3 1× Weekly Pass<br>
+#4-5 55 Diamond<br>
+#6-10 14 Diamond<br>
+#11-20 5 Diamond
+</div>
+
+<div class="card" id="leaderboard"></div>
+
+<div class="card">
+Your Rank: #999<br>
+Coins: <span id="yourCoin">0</span>
+</div>
+
+</div>
+
+</div>
+
+<!-- NAV -->
+<div class="nav">
+<div class="nav-inner">
+<button id="navTap" class="active" onclick="showPage('tapPage')">TAP</button>
+<button id="navTask" onclick="showPage('taskPage')">TASK</button>
+<button id="navRank" onclick="showPage('rankPage')">RANK</button>
+</div>
+</div>
+
+<!-- POPUPS -->
+
+<div id="energyPopup" class="popup hidden">
+<div class="popup-box">
+<div class="close" onclick="hidePopup('energyPopup')">✕</div>
+OUT OF ENERGY<br><br>
+<button onclick="watchEnergy()">WATCH VIDEO (+100)</button>
+</div>
+</div>
+
+<div id="boostPopup" class="popup hidden">
+<div class="popup-box">
+<div class="close" onclick="hidePopup('boostPopup')">✕</div>
+BOOST MOBA COIN<br><br>
+<button onclick="watchBoost()">WATCH VIDEO (3X)</button>
+</div>
+</div>
+
+<div id="howPopup" class="popup hidden">
+<div class="popup-box">
+<div class="close" onclick="hidePopup('howPopup')">✕</div>
+Tap coin to earn.<br>
+Watch ads for energy.<br>
+Watch ads for boost.<br>
+Finish Top 20 to win.
+</div>
+</div>
+
+<div id="mlbbPopup" class="popup hidden">
+<div class="popup-box">
+<div class="close" onclick="hidePopup('mlbbPopup')">✕</div>
+MLBB ID: 12345678<br>
+Server: 1234<br>
+Name: PLAYER
+</div>
+</div>
+
+</div>
+
+<script>
+
+/* STATE */
+let coin=0;
+let energy=500;
+let boost=false;
+let boostEnd=0;
+
+/* TAP */
+tapBtn.onclick=(e)=>{
+
+if(energy<=0){
+showPopup("energyPopup");
+return;
+}
+
+let gain=boost?3:1;
+coin+=gain;
+energy--;
+
+updateUI();
+
+let f=document.createElement("div");
+f.className="float";
+f.innerText="+"+gain;
+f.style.left=e.pageX+"px";
+f.style.top=e.pageY+"px";
+document.body.appendChild(f);
+setTimeout(()=>f.remove(),1000);
+
+};
+
+/* ENERGY */
+function watchEnergy(){
+energy=Math.min(500,energy+100);
+hidePopup("energyPopup");
+updateUI();
+}
+
+/* BOOST */
+function watchBoost(){
+boost=true;
+boostEnd=Date.now()+10000;
+tapBtn.classList.add("boost");
+hidePopup("boostPopup");
+}
+
+setInterval(()=>{
+if(boost && Date.now()>boostEnd){
+boost=false;
+tapBtn.classList.remove("boost");
+}
+},100);
+
+/* UPDATE UI */
+function updateUI(){
+coinText.innerText=coin;
+yourCoin.innerText=coin;
+energyText.innerText=energy+"/500 ENERGY";
+energyFill.style.width=(energy/500*100)+"%";
+}
+
+/* POPUP */
+function showPopup(id){document.getElementById(id).classList.remove("hidden");}
+function hidePopup(id){document.getElementById(id).classList.add("hidden");}
+
+/* PAGE */
+function showPage(id){
+
+tapPage.classList.add("hidden");
+taskPage.classList.add("hidden");
+rankPage.classList.add("hidden");
+
+document.getElementById(id).classList.remove("hidden");
+
+navTap.classList.remove("active");
+navTask.classList.remove("active");
+navRank.classList.remove("active");
+
+if(id=="tapPage")navTap.classList.add("active");
+if(id=="taskPage")navTask.classList.add("active");
+if(id=="rankPage")navRank.classList.add("active");
+
+}
+
+/* TASK */
+function addCoin(amount){
+coin+=amount;
+updateUI();
+}
+
+/* LEADERBOARD */
+let html="";
+for(let i=1;i<=30;i++){
+html+=i+". PLAYER"+i+" "+(1000000-i*10000)+" MC<br>";
+}
+leaderboard.innerHTML=html;
+
+/* SEASON TIMER */
+let end=Date.now()+7*24*3600000;
+setInterval(()=>{
+let d=end-Date.now();
+let days=Math.floor(d/86400000);
+let hrs=Math.floor(d%86400000/3600000);
+let mins=Math.floor(d%3600000/60000);
+seasonTimer.innerText=days+"D "+hrs+"H "+mins+"M";
+},1000);
+
+updateUI();
+
+</script>
 
 </body>
 </html>
