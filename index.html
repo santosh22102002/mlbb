@@ -1,224 +1,261 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MOBA Coin</title>
-    <style>
-        :root {
-            --bg-solid: #050a1d; 
-            --nav-bg: #111936;
-            --accent-blue: #0088cc;
-            --text-white: #ffffff;
-            --text-dim: #8e97b0;
-            --border-ui: #1e2f64;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOBA Coin UI</title>
 
-        * { 
-            box-sizing: border-box; 
-            margin: 0; padding: 0; 
-            font-family: 'Inter', -apple-system, sans-serif; 
-            -webkit-tap-highlight-color: transparent; 
-        }
+<style>
 
-        body { 
-            background-color: var(--bg-solid); 
-            color: var(--text-white); 
-            height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden; 
-        }
+*{
+    box-sizing:border-box;
+}
 
-        /* --- GLOBAL HEADER --- */
-        .global-header {
-            padding: 20px 15px;
-            text-align: center;
-            border-bottom: 1px solid var(--border-ui);
-        }
+body{
+    margin:0;
+    background:#0f1720;
+    font-family:Arial, Helvetica, sans-serif;
+    color:#ffffff;
+}
 
-        .page { display: none; flex: 1; overflow-y: auto; padding: 20px 15px 120px; }
-        .active-page { display: flex; flex-direction: column; }
+/* MOBILE CONTAINER */
+.container{
+    width:100%;
+    max-width:430px;
+    min-width:360px;
+    margin:auto;
+    padding:16px;
+    background:linear-gradient(180deg,#1c2a39,#0f1720);
+    min-height:100vh;
+    text-align:center;
+}
 
-        /* --- THE COIN --- */
-        .coin-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .moba-coin {
-            width: 220px; height: 220px;
-            border-radius: 50%;
-            background-color: var(--accent-blue);
-            border: 4px solid var(--text-white);
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 10px 0 #005a8a;
-            transition: transform 0.05s;
-        }
-        .moba-coin:active { transform: translateY(5px); box-shadow: 0 5px 0 #005a8a; }
-        .coin-text { color: var(--text-white); font-weight: 900; font-size: 2rem; text-align: center; }
+/* header */
+.title{
+    font-size:18px;
+    font-weight:700;
+}
 
-        /* --- BOTTOM NAVIGATION (EXACT DESIGN) --- */
-        .nav-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 70px;
-            background-color: var(--nav-bg);
-            display: flex;
-            justify-content: space-around;
-            border-top: 1px solid var(--border-ui);
-            padding-bottom: env(safe-area-inset-bottom);
-            z-index: 1000;
-        }
+.subtitle{
+    font-size:12px;
+    color:#cfd8dc;
+    margin-top:4px;
+}
 
-        .nav-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            color: var(--text-dim);
-            transition: all 0.2s ease;
-            position: relative;
-            border-top: 3px solid transparent; /* Placeholder for active state */
-        }
+/* balance */
+.balance{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    margin-top:16px;
+}
 
-        /* Icon styling */
-        .nav-icon {
-            font-size: 1.4rem;
-            margin-bottom: 4px;
-        }
+/* SMALL COIN */
+.mc{
+    width:34px;
+    height:34px;
+    border-radius:50%;
+    background:#2f95d6;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    position:relative;
+}
 
-        .nav-label {
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+.mc::before{
+    content:"";
+    position:absolute;
+    width:26px;
+    height:26px;
+    border-radius:50%;
+    background:#1f7fbd;
+}
 
-        /* Active State: Top border and White text */
-        .nav-item.active {
-            color: var(--text-white);
-            border-top: 3px solid var(--accent-blue);
-            background-color: rgba(0, 136, 204, 0.05);
-        }
+.mc span{
+    position:relative;
+    font-size:10px;
+    font-weight:bold;
+    color:rgba(255,255,255,0.5);
+}
 
-        /* --- BALANCE & ENERGY --- */
-        .balance-box { text-align: center; margin: 20px 0; }
-        .balance-box h1 { font-size: 3rem; font-weight: 900; }
-        
-        .energy-bar {
-            width: 100%; max-width: 250px;
-            height: 10px;
-            background: var(--border-ui);
-            border-radius: 10px;
-            margin: 10px auto;
-            overflow: hidden;
-        }
-        .energy-fill {
-            height: 100%;
-            background: var(--accent-blue);
-            width: 100%;
-        }
+.amount{
+    font-size:40px;
+    font-weight:700;
+}
 
-        /* --- LISTS --- */
-        .list-card {
-            background: var(--nav-bg);
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            border: 1px solid var(--border-ui);
-        }
-    </style>
+/* buttons */
+.row{
+    display:flex;
+    justify-content:space-between;
+    margin-top:14px;
+    padding:0 10px;
+}
+
+.circle-btn{
+    width:54px;
+    height:54px;
+    border-radius:50%;
+    background:#2a3441;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:22px;
+}
+
+.btn-label{
+    font-size:11px;
+    margin-top:4px;
+    color:#cfd8dc;
+}
+
+/* BIG COIN MOBILE SIZE */
+.coin{
+    width:70vw;
+    max-width:260px;
+    height:70vw;
+    max-height:260px;
+    border-radius:50%;
+    background:#2f95d6;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    position:relative;
+    margin:20px auto;
+}
+
+.coin::before{
+    content:"";
+    position:absolute;
+    width:78%;
+    height:78%;
+    border-radius:50%;
+    background:#1f7fbd;
+}
+
+.coin-text{
+    position:relative;
+    color:rgba(255,255,255,0.25);
+    font-weight:bold;
+    text-align:center;
+    font-size:6vw;
+    max-font-size:36px;
+    letter-spacing:2px;
+}
+
+/* energy */
+.energy{
+    text-align:left;
+    margin-top:10px;
+}
+
+.energy-text{
+    font-size:16px;
+}
+
+.energy-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+.bar{
+    flex:1;
+    height:8px;
+    background:#2a3441;
+    border-radius:10px;
+}
+
+.fill{
+    width:76%;
+    height:100%;
+    background:#ffffff;
+}
+
+.x3{
+    background:#2a3441;
+    padding:8px 14px;
+    border-radius:20px;
+    font-weight:700;
+    font-size:14px;
+}
+
+/* nav */
+.nav{
+    margin-top:20px;
+    background:#2a3441;
+    border-radius:20px;
+    display:flex;
+    justify-content:space-around;
+    padding:12px;
+}
+
+.nav span{
+    color:#cfd8dc;
+    font-weight:600;
+    font-size:14px;
+}
+
+.nav .active{
+    color:#2f95d6;
+}
+
+</style>
 </head>
 <body>
 
-    <header class="global-header">
-        <div style="font-weight: 900; font-size: 1rem;">SEASON 02 ENDS IN 3D 15H</div>
-        <div style="font-size: 0.7rem; color: var(--accent-blue); font-weight: bold; margin-top: 4px;">TAP & WIN DIAMONDS</div>
-    </header>
+<div class="container">
 
-    <main id="tapPage" class="page active-page">
-        <div class="balance-box">
-            <h1 id="score">0</h1>
-            <p style="color: var(--accent-blue); font-weight: bold; font-size: 0.8rem;">MOBA COIN</p>
+    <div class="title">
+        SEASON 01 CHALLENGE END IN<br>
+        3D 15H 30S
+    </div>
+
+    <div class="subtitle">
+        TAP, COMPETE & WIN MLBB DIAMOND
+    </div>
+
+    <div class="balance">
+        <div class="mc"><span>MC</span></div>
+        <div class="amount">5000</div>
+    </div>
+
+    <div class="row">
+        <div>
+            <div class="circle-btn">?</div>
+            <div class="btn-label">HOW TO PLAY</div>
         </div>
 
-        <div class="coin-container">
-            <div id="coinBtn" class="moba-coin">
-                <div class="coin-text">MOBA<br>COIN</div>
+        <div>
+            <div class="circle-btn">ID</div>
+            <div class="btn-label">MLBB</div>
+        </div>
+    </div>
+
+    <div class="coin">
+        <div class="coin-text">
+            MOBA<br>COIN
+        </div>
+    </div>
+
+    <div class="energy">
+        <div class="energy-text">380/500 ENERGY</div>
+
+        <div class="energy-row">
+            <div class="bar">
+                <div class="fill"></div>
             </div>
-            
-            <div style="width: 100%; max-width: 250px; margin-top: 30px;">
-                <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:5px; font-weight:bold;">
-                    <span>⚡ ENERGY</span>
-                    <span>500/500</span>
-                </div>
-                <div class="energy-bar"><div class="energy-fill"></div></div>
-            </div>
+            <div class="x3">3X COIN</div>
         </div>
-    </main>
+    </div>
 
-    <main id="taskPage" class="page">
-        <h3 style="margin-bottom:15px; color:var(--accent-blue);">TASKS</h3>
-        <div class="list-card">
-            <span>Join Telegram</span>
-            <span style="color:var(--accent-blue); font-weight:bold;">+100 MC</span>
-        </div>
-        <div class="list-card">
-            <span>Follow Twitter</span>
-            <span style="color:var(--accent-blue); font-weight:bold;">+100 MC</span>
-        </div>
-    </main>
+    <div class="nav">
+        <span class="active">TAP</span>
+        <span>TASK</span>
+        <span>RANK</span>
+    </div>
 
-    <main id="rankPage" class="page">
-        <h3 style="margin-bottom:15px; color:var(--accent-blue);">LEADERBOARD</h3>
-        <div class="list-card">
-            <span>1. MythicPlayer</span>
-            <span style="color:var(--text-white); font-weight:bold;">1.2M MC</span>
-        </div>
-        <div class="list-card" style="background: var(--accent-blue); border: none;">
-            <span style="font-weight: bold;">99+. YOU</span>
-            <span style="font-weight: bold;">0 MC</span>
-        </div>
-    </main>
+</div>
 
-    <nav class="nav-bar">
-        <a href="#" class="nav-item active" onclick="switchTab('tapPage', this)">
-            <span class="nav-icon">🪙</span>
-            <span class="nav-label">Tap</span>
-        </a>
-        <a href="#" class="nav-item" onclick="switchTab('taskPage', this)">
-            <span class="nav-icon">📋</span>
-            <span class="nav-label">Task</span>
-        </a>
-        <a href="#" class="nav-item" onclick="switchTab('rankPage', this)">
-            <span class="nav-icon">🏆</span>
-            <span class="nav-label">Rank</span>
-        </a>
-    </nav>
-
-    <script>
-        let score = 0;
-        const scoreEl = document.getElementById('score');
-        
-        document.getElementById('coinBtn').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            score++;
-            scoreEl.innerText = score.toLocaleString();
-        });
-
-        function switchTab(pageId, element) {
-            // Remove active classes
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            
-            // Set active
-            document.getElementById(pageId).classList.add('active-page');
-            element.classList.add('active');
-        }
-    </script>
 </body>
 </html>
