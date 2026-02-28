@@ -4,16 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MOBA COIN</title>
+    
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://adsgram.ai/js/adsgram.js"></script>
+    
     <style>
         /* CSS & UI DESIGN */
         :root { --bg: #2f2f2f; --primary: #007bff; --primary-glow: #00d2ff; --text: #ffffff; }
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
         body {
-            background-color: #000; /* Desktop background */
+            background-color: #000;
             display: flex; justify-content: center;
-            height: 100vh; overflow: hidden; touch-action: none; /* No scrolling */
+            height: 100vh; overflow: hidden; touch-action: none;
         }
 
         #app {
@@ -59,7 +62,7 @@
 
         /* LEADERBOARD PAGE */
         .leaderboard-title { text-align: center; padding: 15px; font-size: 18px; font-weight: bold; border-bottom: 1px solid #444; }
-        .leaderboard-list { flex: 1; overflow-y: auto; padding: 10px; } /* Only internal scroll for list */
+        .leaderboard-list { flex: 1; overflow-y: auto; padding: 10px; }
         .lb-item { display: flex; justify-content: space-between; padding: 12px 10px; background: #333; margin-bottom: 5px; border-radius: 5px; font-size: 14px; }
         .lb-item.me { border: 1px solid #ffcc00; background: #443a11; }
 
@@ -125,7 +128,7 @@
     <div class="overlay" id="energy-popup">
         <div class="popup">
             <h3>OUT OF ENERGY</h3>
-            <p style="font-size:12px; color:#aaa;" id="energy-timer-text">Wait 30 minutes to refill, or watch an ad now!</p>
+            <p style="font-size:12px; color:#aaa;" id="energy-timer-text">Watch a short ad to instantly refill your energy!</p>
             <div class="popup-btns">
                 <button class="btn-cancel" onclick="closePopup('energy-popup')">CANCEL</button>
                 <button class="btn-watch" onclick="watchAdForEnergy()">WATCH (+500)</button>
@@ -149,12 +152,13 @@
     import { getDatabase, ref, onValue, set, get, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
     /* =========================================
-       1. FIREBASE CONFIGURATION (Paste yours)
+       1. FIREBASE CONFIGURATION 
+       (Paste your details here again!)
        ========================================= */
     const firebaseConfig = {
         apiKey: "AIzaSyCO-X24uZxjrJEI1JIwDM3zKFISjJQ28NY",
         authDomain: "mobacoin.firebaseapp.com",
-        databaseURL: "https://mobacoin-default-rtdb.asia-southeast1.firebasedatabase.app/",
+        databaseURL: "https://mobacoin-default-rtdb.asia-southeast1.firebasedatabase.app",
         projectId: "mobacoin",
         storageBucket: "mobacoin.firebasestorage.app",
         messagingSenderId: "275511190304",
@@ -183,8 +187,6 @@
     const maxEnergy = 500;
     let isBoosted = false;
     let allUsers = []; 
-    let refillInterval = null;
-    let isRefilling = false;
 
     // DOM Elements
     const uiCoins = document.getElementById('ui-coins');
@@ -196,11 +198,10 @@
     const clickArea = document.getElementById('click-area');
 
     /* =========================================
-       4. DATABASE SYNC & ANTI-CHEAT
+       4. DATABASE SYNC
        ========================================= */
     const userRef = ref(db, 'users/' + userId);
     
-    // Initial load
     get(userRef).then((snapshot) => {
         if(snapshot.exists()) {
             coins = snapshot.val().coins || 0;
@@ -211,16 +212,14 @@
         updateUIDisplay();
     });
 
-    // Save batching to prevent Firebase spam limits
     let saveTimeout;
     function saveToDB() {
         clearTimeout(saveTimeout);
         saveTimeout = setTimeout(() => {
             update(userRef, { coins: coins, energy: energy });
-        }, 500); // Batches taps every 500ms
+        }, 500); 
     }
 
-    // Leaderboard Listener
     const usersRef = ref(db, 'users');
     onValue(usersRef, (snapshot) => {
         allUsers = [];
@@ -230,7 +229,6 @@
         allUsers.sort((a, b) => b.coins - a.coins);
         renderLeaderboard();
         
-        // Find my rank
         const myIndex = allUsers.findIndex(u => u.id === userId);
         uiRank.innerText = myIndex !== -1 ? (myIndex + 1) : '-';
     });
@@ -242,21 +240,16 @@
         e.preventDefault();
         Array.from(e.touches).forEach(touch => handleTap(touch.clientX, touch.clientY));
     });
-    // Fallback for desktop testing
     tapBtn.addEventListener('mousedown', (e) => { handleTap(e.clientX, e.clientY); });
 
     function handleTap(x, y) {
-        if (isRefilling) {
-            document.getElementById('energy-popup').style.display = 'flex';
-            return;
-        }
         if (energy <= 0) {
             document.getElementById('energy-popup').style.display = 'flex';
             return;
         }
 
         const gain = isBoosted ? 5 : 1;
-        energy = Math.max(0, energy - 1); // 1 tap = 1 energy
+        energy = Math.max(0, energy - 1); 
         coins += gain;
         
         showFloatingText(x, y, gain);
@@ -284,31 +277,68 @@
         uiEnergyBar.style.width = (energy / maxEnergy * 100) + '%';
     }
 
-    /* =========================================
-       6. ENERGY & BOOST POPUP LOGIC
-       ========================================= */
     window.closePopup = (id) => { document.getElementById(id).style.display = 'none'; }
-    
-    // BOOST
+
+    /* =========================================
+       6. REAL ADS: ENERGY REFILL & BOOST
+       ========================================= */
     btnBoost.addEventListener('click', () => {
         document.getElementById('boost-popup').style.display = 'flex';
     });
 
+    window.watchAdForEnergy = () => {
+        const AdController = window.Adsgram.init({ blockId: "23915" }); 
+
+        const watchBtn = document.querySelector('#energy-popup .btn-watch');
+        const originalText = watchBtn.innerText;
+        watchBtn.innerText = "Loading...";
+        watchBtn.disabled = true;
+
+        AdController.show().then((result) => {
+            closePopup('energy-popup');
+            energy = maxEnergy;
+            updateUIDisplay();
+            saveToDB(); 
+            watchBtn.innerText = originalText;
+            watchBtn.disabled = false;
+        }).catch((err) => {
+            alert("Please watch the full video to refill your energy!");
+            watchBtn.innerText = originalText;
+            watchBtn.disabled = false;
+        });
+    };
+
     window.activateBoost = () => {
-        closePopup('boost-popup');
-        isBoosted = true;
-        let timeLeft = 10;
-        btnBoost.disabled = true;
+        const AdController = window.Adsgram.init({ blockId: "23915" });
         
-        const boostInterval = setInterval(() => {
-            btnBoost.innerText = `ACTIVE (${timeLeft}s)`;
-            timeLeft--;
-            if(timeLeft < 0) {
-                clearInterval(boostInterval);
-                isBoosted = false;
-                startBoostCooldown();
-            }
-        }, 1000);
+        const boostBtnPopup = document.querySelector('#boost-popup .btn-watch');
+        const originalText = boostBtnPopup.innerText;
+        boostBtnPopup.innerText = "Loading...";
+        boostBtnPopup.disabled = true;
+
+        AdController.show().then((result) => {
+            closePopup('boost-popup');
+            isBoosted = true;
+            let timeLeft = 10;
+            btnBoost.disabled = true;
+            
+            boostBtnPopup.innerText = originalText;
+            boostBtnPopup.disabled = false;
+            
+            const boostInterval = setInterval(() => {
+                btnBoost.innerText = `ACTIVE (${timeLeft}s)`;
+                timeLeft--;
+                if(timeLeft < 0) {
+                    clearInterval(boostInterval);
+                    isBoosted = false;
+                    startBoostCooldown(); 
+                }
+            }, 1000);
+        }).catch((err) => {
+            alert("Watch the ad to get your 5X Boost!");
+            boostBtnPopup.innerText = originalText;
+            boostBtnPopup.disabled = false;
+        });
     };
 
     function startBoostCooldown() {
@@ -323,26 +353,6 @@
             }
         }, 1000);
     }
-
-    // ENERGY REFILL
-    window.watchAdForEnergy = () => {
-        // Simulating watch ad...
-        closePopup('energy-popup');
-        isRefilling = true;
-        let refillTime = 30 * 60; // 30 minutes in seconds
-
-        refillInterval = setInterval(() => {
-            refillTime--;
-            uiEnergy.innerText = `Refilling...`;
-            if (refillTime <= 0) {
-                clearInterval(refillInterval);
-                energy = maxEnergy;
-                isRefilling = false;
-                updateUIDisplay();
-                saveToDB();
-            }
-        }, 1000);
-    };
 
     /* =========================================
        7. LEADERBOARD & NAVIGATION
@@ -366,7 +376,7 @@
     }
 
     /* =========================================
-       8. SEASON COUNTDOWN (Resets Sunday 23:59:59)
+       8. SEASON COUNTDOWN
        ========================================= */
     function getNextSundayMidnight() {
         const now = new Date();
@@ -382,8 +392,6 @@
         const diff = target - now;
 
         if (diff <= 0) {
-            // Season Reset logic (Ideally handled by a server backend)
-            // But doing a client-side trigger as requested
             resetSeason();
             return;
         }
@@ -398,11 +406,8 @@
     }, 1000);
 
     function resetSeason() {
-        // Save Top 3 to a specific Firebase path (only one client should ideally do this)
         const top3 = allUsers.slice(0, 3);
         set(ref(db, 'season_history/' + Date.now()), top3);
-        
-        // Reset local and trigger db reset for self
         coins = 0; energy = 500;
         saveToDB();
     }
