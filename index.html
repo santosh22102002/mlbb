@@ -1,561 +1,411 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MOBA Coin</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MOBA COIN</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* CSS & UI DESIGN */
+        :root { --bg: #2f2f2f; --primary: #007bff; --primary-glow: #00d2ff; --text: #ffffff; }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        body {
+            background-color: #000; /* Desktop background */
+            display: flex; justify-content: center;
+            height: 100vh; overflow: hidden; touch-action: none; /* No scrolling */
+        }
 
-<style>
+        #app {
+            background-color: var(--bg); color: var(--text);
+            width: 100%; max-width: 350px; height: 100%;
+            position: relative; display: flex; flex-direction: column;
+        }
 
-/* =========================
-   GLOBAL THEME
-========================= */
+        /* HEADER & PROMOS */
+        .header { background: #1a1a1a; padding: 10px; text-align: center; font-size: 11px; font-weight: bold; border-bottom: 2px solid #444; }
+        .countdown { color: #ffcc00; font-size: 16px; margin-top: 5px; font-family: monospace; }
+        .promo-text { font-size: 10px; color: #aaa; text-align: center; margin: 5px 0; padding: 0 10px;}
+        .rewards { background: rgba(0,0,0,0.3); padding: 5px; margin: 5px 10px; border-radius: 5px; font-size: 9px; text-align: center; line-height: 1.4;}
 
-body{
-margin:0;
-font-family:Arial,Helvetica,sans-serif;
-background:linear-gradient(180deg,#18222f,#0b1118);
-color:white;
-display:flex;
-justify-content:center;
-}
+        /* PAGES */
+        .page { display: none; flex: 1; overflow: hidden; flex-direction: column; padding-bottom: 70px; }
+        .page.active { display: flex; }
 
-.app{
-width:390px;
-height:100vh;
-position:relative;
-overflow:hidden;
-}
+        /* MAIN PAGE ELEMENTS */
+        .coin-display { text-align: center; font-size: 32px; font-weight: bold; margin: 15px 0; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .rank-display { text-align: center; font-size: 12px; color: #ffcc00; margin-bottom: 10px; }
+        
+        .clicker-container { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; }
+        .clicker-btn {
+            width: 250px; height: 250px; border-radius: 50%; border: none; outline: none;
+            background: linear-gradient(135deg, var(--primary), var(--primary-glow));
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5), inset 0 -10px 20px rgba(0,0,0,0.3);
+            transition: transform 0.05s ease; position: relative; z-index: 10;
+        }
+        .clicker-btn:active { transform: scale(0.95); }
 
-/* =========================
-   GLOBAL HEADER
-========================= */
+        /* ENERGY & BOOST */
+        .status-row { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #222; }
+        .energy-box { flex: 1; }
+        .energy-text { font-size: 12px; margin-bottom: 5px; font-weight: bold; }
+        .energy-bar-bg { width: 100%; height: 8px; background: #444; border-radius: 4px; overflow: hidden; }
+        .energy-bar-fill { height: 100%; background: #ff4757; width: 100%; transition: width 0.2s; }
+        .boost-btn { 
+            margin-left: 15px; padding: 8px 15px; background: #ffa502; border: none; 
+            border-radius: 5px; color: #fff; font-weight: bold; font-size: 12px; 
+        }
+        .boost-btn:disabled { background: #555; color: #888; }
 
-.header{
-text-align:center;
-padding-top:20px;
-}
+        /* LEADERBOARD PAGE */
+        .leaderboard-title { text-align: center; padding: 15px; font-size: 18px; font-weight: bold; border-bottom: 1px solid #444; }
+        .leaderboard-list { flex: 1; overflow-y: auto; padding: 10px; } /* Only internal scroll for list */
+        .lb-item { display: flex; justify-content: space-between; padding: 12px 10px; background: #333; margin-bottom: 5px; border-radius: 5px; font-size: 14px; }
+        .lb-item.me { border: 1px solid #ffcc00; background: #443a11; }
 
-.season-title{
-font-weight:bold;
-font-size:18px;
-}
+        /* BOTTOM NAV */
+        .bottom-nav { position: absolute; bottom: 0; width: 100%; height: 60px; background: #111; display: flex; border-top: 1px solid #333; }
+        .nav-btn { flex: 1; background: transparent; border: none; color: #aaa; font-size: 14px; font-weight: bold; }
+        .nav-btn.active { color: var(--primary-glow); }
 
-.season-timer{
-font-size:16px;
-margin-top:3px;
-}
+        /* POPUPS */
+        .overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: center; }
+        .popup { background: #222; padding: 20px; border-radius: 10px; width: 80%; text-align: center; border: 1px solid #444; }
+        .popup h3 { margin-bottom: 15px; color: #ff4757; }
+        .popup-btns { display: flex; justify-content: space-between; margin-top: 20px; }
+        .popup-btns button { padding: 10px; border: none; border-radius: 5px; font-weight: bold; width: 48%; }
+        .btn-watch { background: #2ed573; color: #fff; }
+        .btn-cancel { background: #555; color: #fff; }
 
-.subtitle{
-font-size:12px;
-opacity:0.7;
-margin-top:3px;
-}
-
-/* =========================
-   PAGE SYSTEM
-========================= */
-
-.page{
-position:absolute;
-top:80px;
-left:0;
-width:100%;
-bottom:70px;
-overflow-y:auto;
-padding-bottom:20px;
-}
-
-.hidden{
-display:none;
-}
-
-/* =========================
-   TAP PAGE
-========================= */
-
-.coin-display{
-display:flex;
-justify-content:center;
-align-items:center;
-gap:10px;
-margin-top:15px;
-}
-
-.mc-icon{
-width:40px;
-height:40px;
-border-radius:50%;
-background:linear-gradient(145deg,#3aa6ff,#0b5fa8);
-display:flex;
-align-items:center;
-justify-content:center;
-font-weight:bold;
-}
-
-.coin-text{
-font-size:42px;
-font-weight:bold;
-}
-
-.circle-row{
-display:flex;
-justify-content:space-between;
-padding:0 50px;
-margin-top:15px;
-}
-
-.circle{
-width:60px;
-height:60px;
-border-radius:50%;
-background:#263241;
-display:flex;
-align-items:center;
-justify-content:center;
-cursor:pointer;
-}
-
-.circle-label{
-text-align:center;
-font-size:12px;
-opacity:0.7;
-margin-top:5px;
-}
-
-.tap-container{
-display:flex;
-justify-content:center;
-margin-top:20px;
-}
-
-.tap-btn{
-width:260px;
-height:260px;
-border-radius:50%;
-border:none;
-background:radial-gradient(circle,#3aa6ff,#0b5fa8);
-color:rgba(255,255,255,0.3);
-font-size:38px;
-font-weight:bold;
-box-shadow:0 0 40px rgba(0,0,0,0.6);
-cursor:pointer;
-}
-
-.tap-btn.boost{
-box-shadow:0 0 30px #3aa6ff;
-}
-
-/* =========================
-   ENERGY
-========================= */
-
-.energy-row{
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:15px 20px;
-}
-
-.energy-bar{
-width:200px;
-height:10px;
-background:#263241;
-border-radius:10px;
-overflow:hidden;
-margin-top:4px;
-}
-
-.energy-fill{
-height:100%;
-background:white;
-width:100%;
-}
-
-.boost-button{
-background:#263241;
-border:none;
-color:white;
-padding:10px 18px;
-border-radius:20px;
-cursor:pointer;
-}
-
-/* =========================
-   TASK & RANK
-========================= */
-
-.section{
-padding:15px;
-}
-
-.card{
-background:#263241;
-border-radius:15px;
-padding:12px;
-margin-bottom:12px;
-}
-
-.row{
-display:flex;
-justify-content:space-between;
-margin-bottom:6px;
-}
-
-.btn{
-padding:5px 12px;
-border-radius:12px;
-border:none;
-cursor:pointer;
-}
-
-.claim{background:#1f2a38;color:white;}
-.go{background:#3aa6ff;color:white;}
-
-/* =========================
-   NAVIGATION
-========================= */
-
-.nav{
-position:absolute;
-bottom:10px;
-width:100%;
-display:flex;
-justify-content:center;
-}
-
-.nav-inner{
-width:90%;
-background:#263241;
-border-radius:25px;
-display:flex;
-}
-
-.nav-inner button{
-flex:1;
-padding:14px;
-border:none;
-background:none;
-color:white;
-font-size:15px;
-cursor:pointer;
-}
-
-.active{
-color:#3aa6ff;
-}
-
-/* =========================
-   POPUP
-========================= */
-
-.popup{
-position:absolute;
-top:0;
-left:0;
-right:0;
-bottom:0;
-background:rgba(0,0,0,0.7);
-display:flex;
-justify-content:center;
-align-items:center;
-}
-
-.popup-box{
-background:#263241;
-border-radius:20px;
-padding:20px;
-width:80%;
-text-align:center;
-position:relative;
-}
-
-.close{
-position:absolute;
-right:12px;
-top:8px;
-cursor:pointer;
-}
-
-/* =========================
-   FLOAT ANIMATION
-========================= */
-
-.float{
-position:absolute;
-color:#3aa6ff;
-font-weight:bold;
-animation:floatUp 1s forwards;
-}
-
-@keyframes floatUp{
-to{transform:translateY(-50px);opacity:0;}
-}
-
-</style>
+        /* FLOATING ANIMATIONS */
+        .float-text { position: absolute; pointer-events: none; font-weight: bold; font-size: 24px; color: white; animation: floatUp 1s ease-out forwards; z-index: 20; }
+        .float-text.glowing { color: #ffcc00; text-shadow: 0 0 10px #ffcc00; font-size: 28px; }
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-80px) scale(1.2); } }
+    </style>
 </head>
-
 <body>
 
-<div class="app">
+<div id="app">
+    <div class="header">
+        GAME TITLE: MOBA COIN<br>
+        WEEKLY CHAMPION IS NOW STARTED
+        <div class="countdown" id="season-timer">0D 00H 00M 00S</div>
+    </div>
+    <div class="promo-text">TAP, COMPETE & WIN MLBB DIAMOND</div>
+    <div class="rewards">🏆 1ST 3X WEEKLY PASS | 🥈 2ND 2X WEEKLY PASS | 🥉 3RD 1X WEEKLY PASS</div>
 
-<!-- HEADER -->
-<div class="header">
-<div class="season-title">SEASON 02 CHALLENGE END IN</div>
-<div id="seasonTimer" class="season-timer">7D 00H 00M</div>
-<div class="subtitle">TAP, COMPETE & WIN MLBB DIAMOND</div>
+    <div id="page-main" class="page active">
+        <div class="rank-display">Your Rank: #<span id="ui-rank">-</span></div>
+        <div class="coin-display"><span id="ui-coins">0</span> 🪙</div>
+        
+        <div class="clicker-container" id="click-area">
+            <button class="clicker-btn" id="tap-btn"></button>
+        </div>
+
+        <div class="status-row">
+            <div class="energy-box">
+                <div class="energy-text">Energy: <span id="ui-energy">500</span> / 500</div>
+                <div class="energy-bar-bg"><div class="energy-bar-fill" id="ui-energy-bar"></div></div>
+            </div>
+            <button class="boost-btn" id="btn-boost">5X COIN</button>
+        </div>
+    </div>
+
+    <div id="page-lb" class="page">
+        <div class="leaderboard-title">Current Season Top Players</div>
+        <div class="leaderboard-list" id="lb-list">
+            </div>
+    </div>
+
+    <div class="bottom-nav">
+        <button class="nav-btn active" onclick="switchPage('main')">Main</button>
+        <button class="nav-btn" onclick="switchPage('lb')">Leaderboard</button>
+    </div>
+
+    <div class="overlay" id="energy-popup">
+        <div class="popup">
+            <h3>OUT OF ENERGY</h3>
+            <p style="font-size:12px; color:#aaa;" id="energy-timer-text">Wait 30 minutes to refill, or watch an ad now!</p>
+            <div class="popup-btns">
+                <button class="btn-cancel" onclick="closePopup('energy-popup')">CANCEL</button>
+                <button class="btn-watch" onclick="watchAdForEnergy()">WATCH (+500)</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" id="boost-popup">
+        <div class="popup">
+            <h3 style="color:#ffa502;">BOOST COIN UPTO 5X</h3>
+            <div class="popup-btns">
+                <button class="btn-cancel" onclick="closePopup('boost-popup')">CANCEL</button>
+                <button class="btn-watch" onclick="activateBoost()">WATCH</button>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- TAP PAGE -->
-<div id="tapPage" class="page">
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getDatabase, ref, onValue, set, get, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
-<div class="coin-display">
-<div class="mc-icon">MC</div>
-<div id="coinText" class="coin-text">0</div>
-</div>
+    /* =========================================
+       1. FIREBASE CONFIGURATION (Paste yours)
+       ========================================= */
+    const firebaseConfig = {
+        apiKey: "AIzaSyCO-X24uZxjrJEI1JIwDM3zKFISjJQ28NY",
+        authDomain: "mobacoin.firebaseapp.com",
+        databaseURL: "https://mobacoin-default-rtdb.asia-southeast1.firebasedatabase.app/",
+        projectId: "mobacoin",
+        storageBucket: "mobacoin.firebasestorage.app",
+        messagingSenderId: "275511190304",
+        appId: "1:275511190304:web:ce0f432a35c55703b5ed45"
+    };
 
-<div class="circle-row">
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-<div>
-<div class="circle" onclick="showPopup('howPopup')">?</div>
-<div class="circle-label">HOW TO PLAY</div>
-</div>
+    /* =========================================
+       2. TELEGRAM SDK INIT
+       ========================================= */
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    
+    // Auto-detect user or fallback for testing
+    const user = tg.initDataUnsafe?.user || { id: Math.floor(Math.random()*100000), username: "TestUser_" + Math.floor(Math.random()*100) };
+    const userId = user.id.toString();
+    const username = user.username || user.first_name || "Unknown";
 
-<div>
-<div class="circle" onclick="showPopup('mlbbPopup')">ID</div>
-<div class="circle-label">MLBB ID</div>
-</div>
+    /* =========================================
+       3. GAME STATE
+       ========================================= */
+    let coins = 0;
+    let energy = 500;
+    const maxEnergy = 500;
+    let isBoosted = false;
+    let allUsers = []; 
+    let refillInterval = null;
+    let isRefilling = false;
 
-</div>
+    // DOM Elements
+    const uiCoins = document.getElementById('ui-coins');
+    const uiEnergy = document.getElementById('ui-energy');
+    const uiEnergyBar = document.getElementById('ui-energy-bar');
+    const uiRank = document.getElementById('ui-rank');
+    const tapBtn = document.getElementById('tap-btn');
+    const btnBoost = document.getElementById('btn-boost');
+    const clickArea = document.getElementById('click-area');
 
-<div class="tap-container">
-<button id="tapBtn" class="tap-btn">MOBA<br>COIN</button>
-</div>
+    /* =========================================
+       4. DATABASE SYNC & ANTI-CHEAT
+       ========================================= */
+    const userRef = ref(db, 'users/' + userId);
+    
+    // Initial load
+    get(userRef).then((snapshot) => {
+        if(snapshot.exists()) {
+            coins = snapshot.val().coins || 0;
+            energy = snapshot.val().energy !== undefined ? snapshot.val().energy : 500;
+        } else {
+            set(userRef, { username: username, coins: 0, energy: 500 });
+        }
+        updateUIDisplay();
+    });
 
-<div class="energy-row">
+    // Save batching to prevent Firebase spam limits
+    let saveTimeout;
+    function saveToDB() {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+            update(userRef, { coins: coins, energy: energy });
+        }, 500); // Batches taps every 500ms
+    }
 
-<div>
-<div id="energyText">500/500 ENERGY</div>
-<div class="energy-bar">
-<div id="energyFill" class="energy-fill"></div>
-</div>
-</div>
+    // Leaderboard Listener
+    const usersRef = ref(db, 'users');
+    onValue(usersRef, (snapshot) => {
+        allUsers = [];
+        snapshot.forEach(child => {
+            allUsers.push({ id: child.key, ...child.val() });
+        });
+        allUsers.sort((a, b) => b.coins - a.coins);
+        renderLeaderboard();
+        
+        // Find my rank
+        const myIndex = allUsers.findIndex(u => u.id === userId);
+        uiRank.innerText = myIndex !== -1 ? (myIndex + 1) : '-';
+    });
 
-<button class="boost-button" onclick="showPopup('boostPopup')">
-3X COIN
-</button>
+    /* =========================================
+       5. TAP SYSTEM
+       ========================================= */
+    tapBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        Array.from(e.touches).forEach(touch => handleTap(touch.clientX, touch.clientY));
+    });
+    // Fallback for desktop testing
+    tapBtn.addEventListener('mousedown', (e) => { handleTap(e.clientX, e.clientY); });
 
-</div>
+    function handleTap(x, y) {
+        if (isRefilling) {
+            document.getElementById('energy-popup').style.display = 'flex';
+            return;
+        }
+        if (energy <= 0) {
+            document.getElementById('energy-popup').style.display = 'flex';
+            return;
+        }
 
-</div>
+        const gain = isBoosted ? 5 : 1;
+        energy = Math.max(0, energy - 1); // 1 tap = 1 energy
+        coins += gain;
+        
+        showFloatingText(x, y, gain);
+        updateUIDisplay();
+        saveToDB();
 
-<!-- TASK PAGE -->
-<div id="taskPage" class="page hidden">
+        if (energy <= 0) {
+            document.getElementById('energy-popup').style.display = 'flex';
+        }
+    }
 
-<div class="section">
+    function showFloatingText(x, y, amount) {
+        const el = document.createElement('div');
+        el.className = 'float-text' + (amount === 5 ? ' glowing' : '');
+        el.innerText = '+' + amount;
+        el.style.left = (x - 10) + 'px';
+        el.style.top = (y - 20) + 'px';
+        clickArea.appendChild(el);
+        setTimeout(() => el.remove(), 1000);
+    }
 
-<div class="card">
-Daily Check-in<br><br>
-<button class="btn claim" onclick="addCoin(100)">CLAIM +100</button>
-</div>
+    function updateUIDisplay() {
+        uiCoins.innerText = coins.toLocaleString();
+        uiEnergy.innerText = energy;
+        uiEnergyBar.style.width = (energy / maxEnergy * 100) + '%';
+    }
 
-<div class="card">
-Join Community +100 MC
-<button class="btn claim" onclick="addCoin(100)">CLAIM</button>
-</div>
+    /* =========================================
+       6. ENERGY & BOOST POPUP LOGIC
+       ========================================= */
+    window.closePopup = (id) => { document.getElementById(id).style.display = 'none'; }
+    
+    // BOOST
+    btnBoost.addEventListener('click', () => {
+        document.getElementById('boost-popup').style.display = 'flex';
+    });
 
-<div class="card">
-Invite Friend +10000 MC
-<button class="btn go">GO</button>
-</div>
+    window.activateBoost = () => {
+        closePopup('boost-popup');
+        isBoosted = true;
+        let timeLeft = 10;
+        btnBoost.disabled = true;
+        
+        const boostInterval = setInterval(() => {
+            btnBoost.innerText = `ACTIVE (${timeLeft}s)`;
+            timeLeft--;
+            if(timeLeft < 0) {
+                clearInterval(boostInterval);
+                isBoosted = false;
+                startBoostCooldown();
+            }
+        }, 1000);
+    };
 
-</div>
+    function startBoostCooldown() {
+        let coolLeft = 10;
+        const coolInterval = setInterval(() => {
+            btnBoost.innerText = `COOLDOWN (${coolLeft}s)`;
+            coolLeft--;
+            if(coolLeft < 0) {
+                clearInterval(coolInterval);
+                btnBoost.disabled = false;
+                btnBoost.innerText = "5X COIN";
+            }
+        }, 1000);
+    }
 
-</div>
+    // ENERGY REFILL
+    window.watchAdForEnergy = () => {
+        // Simulating watch ad...
+        closePopup('energy-popup');
+        isRefilling = true;
+        let refillTime = 30 * 60; // 30 minutes in seconds
 
-<!-- RANK PAGE -->
-<div id="rankPage" class="page hidden">
+        refillInterval = setInterval(() => {
+            refillTime--;
+            uiEnergy.innerText = `Refilling...`;
+            if (refillTime <= 0) {
+                clearInterval(refillInterval);
+                energy = maxEnergy;
+                isRefilling = false;
+                updateUIDisplay();
+                saveToDB();
+            }
+        }, 1000);
+    };
 
-<div class="section">
+    /* =========================================
+       7. LEADERBOARD & NAVIGATION
+       ========================================= */
+    window.switchPage = (target) => {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('page-' + target).classList.add('active');
+        event.target.classList.add('active');
+    };
 
-<div class="card">
-#1 3× Weekly Pass<br>
-#2 2× Weekly Pass<br>
-#3 1× Weekly Pass<br>
-#4-5 55 Diamond<br>
-#6-10 14 Diamond<br>
-#11-20 5 Diamond
-</div>
+    function renderLeaderboard() {
+        const lbList = document.getElementById('lb-list');
+        lbList.innerHTML = '';
+        allUsers.slice(0, 50).forEach((u, index) => {
+            const div = document.createElement('div');
+            div.className = 'lb-item' + (u.id === userId ? ' me' : '');
+            div.innerHTML = `<span>#${index + 1} ${u.username}</span> <span>${u.coins.toLocaleString()} 🪙</span>`;
+            lbList.appendChild(div);
+        });
+    }
 
-<div class="card" id="leaderboard"></div>
+    /* =========================================
+       8. SEASON COUNTDOWN (Resets Sunday 23:59:59)
+       ========================================= */
+    function getNextSundayMidnight() {
+        const now = new Date();
+        const nextSunday = new Date(now);
+        nextSunday.setUTCDate(now.getUTCDate() + ((7 - now.getUTCDay()) % 7 || 7));
+        nextSunday.setUTCHours(23, 59, 59, 999);
+        return nextSunday;
+    }
 
-<div class="card">
-Your Rank: #999<br>
-Coins: <span id="yourCoin">0</span>
-</div>
+    setInterval(() => {
+        const now = new Date();
+        const target = getNextSundayMidnight();
+        const diff = target - now;
 
-</div>
+        if (diff <= 0) {
+            // Season Reset logic (Ideally handled by a server backend)
+            // But doing a client-side trigger as requested
+            resetSeason();
+            return;
+        }
 
-</div>
+        const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const m = Math.floor((diff / 1000 / 60) % 60);
+        const s = Math.floor((diff / 1000) % 60);
 
-<!-- NAV -->
-<div class="nav">
-<div class="nav-inner">
-<button id="navTap" class="active" onclick="showPage('tapPage')">TAP</button>
-<button id="navTask" onclick="showPage('taskPage')">TASK</button>
-<button id="navRank" onclick="showPage('rankPage')">RANK</button>
-</div>
-</div>
+        document.getElementById('season-timer').innerText = 
+            `${d}D ${h.toString().padStart(2,'0')}H ${m.toString().padStart(2,'0')}M ${s.toString().padStart(2,'0')}S`;
+    }, 1000);
 
-<!-- POPUPS -->
-
-<div id="energyPopup" class="popup hidden">
-<div class="popup-box">
-<div class="close" onclick="hidePopup('energyPopup')">✕</div>
-OUT OF ENERGY<br><br>
-<button onclick="watchEnergy()">WATCH VIDEO (+100)</button>
-</div>
-</div>
-
-<div id="boostPopup" class="popup hidden">
-<div class="popup-box">
-<div class="close" onclick="hidePopup('boostPopup')">✕</div>
-BOOST MOBA COIN<br><br>
-<button onclick="watchBoost()">WATCH VIDEO (3X)</button>
-</div>
-</div>
-
-<div id="howPopup" class="popup hidden">
-<div class="popup-box">
-<div class="close" onclick="hidePopup('howPopup')">✕</div>
-Tap coin to earn.<br>
-Watch ads for energy.<br>
-Watch ads for boost.<br>
-Finish Top 20 to win.
-</div>
-</div>
-
-<div id="mlbbPopup" class="popup hidden">
-<div class="popup-box">
-<div class="close" onclick="hidePopup('mlbbPopup')">✕</div>
-MLBB ID: 12345678<br>
-Server: 1234<br>
-Name: PLAYER
-</div>
-</div>
-
-</div>
-
-<script>
-
-/* STATE */
-let coin=0;
-let energy=500;
-let boost=false;
-let boostEnd=0;
-
-/* TAP */
-tapBtn.onclick=(e)=>{
-
-if(energy<=0){
-showPopup("energyPopup");
-return;
-}
-
-let gain=boost?3:1;
-coin+=gain;
-energy--;
-
-updateUI();
-
-let f=document.createElement("div");
-f.className="float";
-f.innerText="+"+gain;
-f.style.left=e.pageX+"px";
-f.style.top=e.pageY+"px";
-document.body.appendChild(f);
-setTimeout(()=>f.remove(),1000);
-
-};
-
-/* ENERGY */
-function watchEnergy(){
-energy=Math.min(500,energy+100);
-hidePopup("energyPopup");
-updateUI();
-}
-
-/* BOOST */
-function watchBoost(){
-boost=true;
-boostEnd=Date.now()+10000;
-tapBtn.classList.add("boost");
-hidePopup("boostPopup");
-}
-
-setInterval(()=>{
-if(boost && Date.now()>boostEnd){
-boost=false;
-tapBtn.classList.remove("boost");
-}
-},100);
-
-/* UPDATE UI */
-function updateUI(){
-coinText.innerText=coin;
-yourCoin.innerText=coin;
-energyText.innerText=energy+"/500 ENERGY";
-energyFill.style.width=(energy/500*100)+"%";
-}
-
-/* POPUP */
-function showPopup(id){document.getElementById(id).classList.remove("hidden");}
-function hidePopup(id){document.getElementById(id).classList.add("hidden");}
-
-/* PAGE */
-function showPage(id){
-
-tapPage.classList.add("hidden");
-taskPage.classList.add("hidden");
-rankPage.classList.add("hidden");
-
-document.getElementById(id).classList.remove("hidden");
-
-navTap.classList.remove("active");
-navTask.classList.remove("active");
-navRank.classList.remove("active");
-
-if(id=="tapPage")navTap.classList.add("active");
-if(id=="taskPage")navTask.classList.add("active");
-if(id=="rankPage")navRank.classList.add("active");
-
-}
-
-/* TASK */
-function addCoin(amount){
-coin+=amount;
-updateUI();
-}
-
-/* LEADERBOARD */
-let html="";
-for(let i=1;i<=30;i++){
-html+=i+". PLAYER"+i+" "+(1000000-i*10000)+" MC<br>";
-}
-leaderboard.innerHTML=html;
-
-/* SEASON TIMER */
-let end=Date.now()+7*24*3600000;
-setInterval(()=>{
-let d=end-Date.now();
-let days=Math.floor(d/86400000);
-let hrs=Math.floor(d%86400000/3600000);
-let mins=Math.floor(d%3600000/60000);
-seasonTimer.innerText=days+"D "+hrs+"H "+mins+"M";
-},1000);
-
-updateUI();
-
+    function resetSeason() {
+        // Save Top 3 to a specific Firebase path (only one client should ideally do this)
+        const top3 = allUsers.slice(0, 3);
+        set(ref(db, 'season_history/' + Date.now()), top3);
+        
+        // Reset local and trigger db reset for self
+        coins = 0; energy = 500;
+        saveToDB();
+    }
 </script>
-
 </body>
 </html>
