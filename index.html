@@ -287,7 +287,10 @@
     });
 
     window.watchAdForEnergy = () => {
-        const AdController = window.Adsgram.init({ blockId: "23915" }); 
+        const AdController = window.Adsgram.init({ 
+    blockId: "23915",
+    userId: userId.toString() 
+}); 
 
         const watchBtn = document.querySelector('#energy-popup .btn-watch');
         const originalText = watchBtn.innerText;
@@ -309,7 +312,10 @@
     };
 
     window.activateBoost = () => {
-        const AdController = window.Adsgram.init({ blockId: "23915" });
+        const AdController = window.Adsgram.init({ 
+    blockId: "23915",
+    userId: userId.toString() 
+});
         
         const boostBtnPopup = document.querySelector('#boost-popup .btn-watch');
         const originalText = boostBtnPopup.innerText;
