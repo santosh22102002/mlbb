@@ -184,6 +184,7 @@
        ========================================= */
     let coins = 0;
     let energy = 500;
+    const TEST_MODE = true; // Set this to false once Adsgram approves your account
     const maxEnergy = 500;
     let isBoosted = false;
     let allUsers = []; 
@@ -295,12 +296,25 @@
         watchBtn.innerText = "Connecting...";
         watchBtn.disabled = true;
 
+        // 🛠️ TEST MODE BYPASS
+        if (TEST_MODE) {
+            setTimeout(() => {
+                closePopup('energy-popup');
+                energy = maxEnergy; 
+                updateUIDisplay();
+                saveToDB(); 
+                watchBtn.innerText = originalText;
+                watchBtn.disabled = false;
+                alert("🛠️ TEST MODE: Energy Refilled! (Ads bypassed)");
+            }, 1000); // Simulates a 1-second ad load
+            return; 
+        }
+
         try {
             const Adsgram = await getAdsgram();
             const AdController = Adsgram.init({ blockId: "23915" }); 
             
             AdController.show().then((result) => {
-                // SUCCESS
                 closePopup('energy-popup');
                 energy = maxEnergy; 
                 updateUIDisplay();
@@ -313,7 +327,6 @@
                 watchBtn.disabled = false;
             });
         } catch (error) {
-            // FAILSAFE: ISP Blocked the ad network
             alert("⚠️ Your network is blocking the ad server! Giving you free energy so you can keep playing.");
             closePopup('energy-popup');
             energy = maxEnergy; 
@@ -333,12 +346,35 @@
         boostBtnPopup.innerText = "Connecting...";
         boostBtnPopup.disabled = true;
 
+        // 🛠️ TEST MODE BYPASS
+        if (TEST_MODE) {
+            setTimeout(() => {
+                closePopup('boost-popup');
+                isBoosted = true;
+                let timeLeft = 10; 
+                btnBoost.disabled = true;
+                boostBtnPopup.innerText = originalText;
+                boostBtnPopup.disabled = false;
+                alert("🛠️ TEST MODE: 5X Boost Activated! (Ads bypassed)");
+                
+                const boostInterval = setInterval(() => {
+                    btnBoost.innerText = `ACTIVE (${timeLeft}s)`;
+                    timeLeft--;
+                    if(timeLeft < 0) {
+                        clearInterval(boostInterval);
+                        isBoosted = false;
+                        startBoostCooldown(); 
+                    }
+                }, 1000);
+            }, 1000);
+            return;
+        }
+
         try {
             const Adsgram = await getAdsgram();
             const AdController = Adsgram.init({ blockId: "23915" });
             
             AdController.show().then((result) => {
-                // SUCCESS
                 closePopup('boost-popup');
                 isBoosted = true;
                 let timeLeft = 10; 
@@ -361,7 +397,6 @@
                 boostBtnPopup.disabled = false;
             });
         } catch (error) {
-            // FAILSAFE: ISP Blocked the ad network
             alert("⚠️ Your network is blocking the ad server! Activating free 5X Boost.");
             closePopup('boost-popup');
             isBoosted = true;
