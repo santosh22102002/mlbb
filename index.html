@@ -302,6 +302,13 @@
             watchBtn.disabled = false;
             return;
         }
+        // Check if script exists
+if (!window.Adsgram) {
+    alert("⚠️ Ad Server unreachable. Trying again... Please make sure your Wi-Fi/Carrier isn't blocking ads.");
+    watchBtn.innerText = originalText;
+    watchBtn.disabled = false;
+    return;
+}
 
         try {
             // 2. Initialize Ad
@@ -346,6 +353,14 @@
             boostBtnPopup.disabled = false;
             return;
         }
+
+        // Check if script exists
+if (!window.Adsgram) {
+    alert("⚠️ Ad Server unreachable. Trying again... Please make sure your Wi-Fi/Carrier isn't blocking ads.");
+    watchBtn.innerText = originalText;
+    watchBtn.disabled = false;
+    return;
+}
 
         try {
             const AdController = window.Adsgram.init({ blockId: "23915" });
