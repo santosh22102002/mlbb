@@ -286,79 +286,101 @@
         document.getElementById('boost-popup').style.display = 'flex';
     });
 
+    // -----------------------------------------
+    // BULLETPROOF ADS: ENERGY REFILL
+    // -----------------------------------------
     window.watchAdForEnergy = () => {
-        const AdController = window.Adsgram.init({ 
-    blockId: "23915",
-    userId: userId.toString() 
-}); 
-
         const watchBtn = document.querySelector('#energy-popup .btn-watch');
         const originalText = watchBtn.innerText;
         watchBtn.innerText = "Loading...";
         watchBtn.disabled = true;
 
-        AdController.show().then((result) => {
-            closePopup('energy-popup');
-            energy = maxEnergy;
-            updateUIDisplay();
-            saveToDB(); 
+        // 1. Check if Ad Blocker killed the script
+        if (typeof window.Adsgram === "undefined") {
+            alert("⚠️ Ad Blocked! Turn off your browser's ad blocker or test directly inside the Telegram app on your phone.");
             watchBtn.innerText = originalText;
             watchBtn.disabled = false;
-        }).catch((err) => {
-            alert("Please watch the full video to refill your energy!");
+            return;
+        }
+
+        try {
+            // 2. Initialize Ad
+            const AdController = window.Adsgram.init({ blockId: "23915" }); 
+
+            // 3. Try to show the Ad
+            AdController.show().then((result) => {
+                // SUCCESS
+                closePopup('energy-popup');
+                energy = maxEnergy; 
+                updateUIDisplay();
+                saveToDB(); 
+                
+                watchBtn.innerText = originalText;
+                watchBtn.disabled = false;
+            }).catch((err) => {
+                // FAILED (Usually means "No ads available right now")
+                console.error(err);
+                alert("❌ No ads available right now, or the video was closed early. Try again later!");
+                watchBtn.innerText = originalText;
+                watchBtn.disabled = false;
+            });
+        } catch (error) {
+            alert("❌ System Error: Could not connect to the Ad Network.");
             watchBtn.innerText = originalText;
             watchBtn.disabled = false;
-        });
+        }
     };
 
+    // -----------------------------------------
+    // BULLETPROOF ADS: 5X COIN BOOST
+    // -----------------------------------------
     window.activateBoost = () => {
-        const AdController = window.Adsgram.init({ 
-    blockId: "23915",
-    userId: userId.toString() 
-});
-        
         const boostBtnPopup = document.querySelector('#boost-popup .btn-watch');
         const originalText = boostBtnPopup.innerText;
         boostBtnPopup.innerText = "Loading...";
         boostBtnPopup.disabled = true;
 
-        AdController.show().then((result) => {
-            closePopup('boost-popup');
-            isBoosted = true;
-            let timeLeft = 10;
-            btnBoost.disabled = true;
-            
+        if (typeof window.Adsgram === "undefined") {
+            alert("⚠️ Ad Blocked! Turn off your browser's ad blocker or test directly inside the Telegram app on your phone.");
             boostBtnPopup.innerText = originalText;
             boostBtnPopup.disabled = false;
-            
-            const boostInterval = setInterval(() => {
-                btnBoost.innerText = `ACTIVE (${timeLeft}s)`;
-                timeLeft--;
-                if(timeLeft < 0) {
-                    clearInterval(boostInterval);
-                    isBoosted = false;
-                    startBoostCooldown(); 
-                }
-            }, 1000);
-        }).catch((err) => {
-            alert("Watch the ad to get your 5X Boost!");
-            boostBtnPopup.innerText = originalText;
-            boostBtnPopup.disabled = false;
-        });
-    };
+            return;
+        }
 
-    function startBoostCooldown() {
-        let coolLeft = 10;
-        const coolInterval = setInterval(() => {
-            btnBoost.innerText = `COOLDOWN (${coolLeft}s)`;
-            coolLeft--;
-            if(coolLeft < 0) {
-                clearInterval(coolInterval);
-                btnBoost.disabled = false;
-                btnBoost.innerText = "5X COIN";
-            }
-        }, 1000);
-    }
+        try {
+            const AdController = window.Adsgram.init({ blockId: "23915" });
+            
+            AdController.show().then((result) => {
+                // SUCCESS
+                closePopup('boost-popup');
+                isBoosted = true;
+                let timeLeft = 10; 
+                btnBoost.disabled = true;
+                
+                boostBtnPopup.innerText = originalText;
+                boostBtnPopup.disabled = false;
+                
+                const boostInterval = setInterval(() => {
+                    btnBoost.innerText = `ACTIVE (${timeLeft}s)`;
+                    timeLeft--;
+                    if(timeLeft < 0) {
+                        clearInterval(boostInterval);
+                        isBoosted = false;
+                        startBoostCooldown(); 
+                    }
+                }, 1000);
+            }).catch((err) => {
+                // FAILED
+                alert("❌ No ads available right now, or the video was closed early. Try again later!");
+                boostBtnPopup.innerText = originalText;
+                boostBtnPopup.disabled = false;
+            });
+        } catch (error) {
+            alert("❌ System Error: Could not connect to the Ad Network.");
+            boostBtnPopup.innerText = originalText;
+            boostBtnPopup.disabled = false;
+        }
+    };
 
     /* =========================================
        7. LEADERBOARD & NAVIGATION
