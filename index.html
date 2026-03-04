@@ -7,208 +7,117 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://adsgram.ai/sdk-v1.js"></script>
-    
     <style>
-        :root {
-            --bg: #0f172a; --card: #1e293b; --accent: #38bdf8;
-            --text: #f1f5f9; --dim: #94a3b8; --error: #f87171;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--bg); color: var(--text);
-            margin: 0; padding: 20px; padding-bottom: 120px;
-            -webkit-user-select: none; user-select: none;
-        }
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #38bdf8; --text: #f1f5f9; --dim: #94a3b8; --error: #f87171; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; padding-bottom: 120px; }
         .left { text-align: left; }
-        h1 { font-size: 26px; color: var(--accent); margin: 0; }
-        .status { font-size: 14px; color: var(--dim); margin: 5px 0; }
-        .prize { font-size: 22px; font-weight: 800; margin-bottom: 25px; color: #fbbf24; }
-        
-        .winner-box {
-            background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981;
-            padding: 15px; border-radius: 12px; margin-bottom: 20px; display: none;
-        }
-
+        h1 { font-size: 24px; color: var(--accent); margin: 0; }
+        .prize { font-size: 20px; font-weight: bold; margin-bottom: 20px; color: #fbbf24; }
+        .winner-box { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: none; }
         table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; }
-        th { background: #334155; padding: 12px; font-size: 11px; text-transform: uppercase; color: var(--dim); letter-spacing: 1px; }
-        td { padding: 14px; border-bottom: 1px solid #334155; text-align: center; font-family: 'Courier New', monospace; font-size: 16px; }
-
-        .footer {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px);
-            padding: 20px; border-top: 1px solid #334155;
-            display: flex; flex-direction: column; align-items: center; z-index: 100;
-        }
-        #claimBtn {
-            width: 100%; max-width: 400px; padding: 16px; border-radius: 14px; border: none;
-            background: var(--accent); color: #000; font-weight: bold; font-size: 16px;
-            cursor: pointer; transition: transform 0.1s active;
-        }
-        #claimBtn:disabled { background: #475569; color: var(--dim); opacity: 0.6; }
-        #cdText { margin-top: 10px; font-size: 13px; color: var(--error); font-weight: 500; height: 15px; }
+        th { background: #334155; padding: 12px; font-size: 11px; color: var(--dim); }
+        td { padding: 14px; border-bottom: 1px solid #334155; text-align: center; }
+        .footer { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg); padding: 20px; border-top: 1px solid #334155; display: flex; flex-direction: column; align-items: center; }
+        #claimBtn { width: 100%; padding: 16px; border-radius: 14px; border: none; background: var(--accent); font-weight: bold; cursor: pointer; }
+        #claimBtn:disabled { background: #475569; opacity: 0.6; }
+        #cdText { margin-top: 10px; font-size: 13px; color: var(--error); }
     </style>
 </head>
 <body>
-
     <div class="left">
-        <h1 id="lotteryTitle">Daily Mega Draw</h1>
-        <div id="lotteryStatus" class="status">Connecting to Telegram...</div>
-        <div class="prize">Prize Pool: $500.00</div>
+        <h1>Daily Mega Draw</h1>
+        <div id="lotteryStatus" style="color:var(--dim); margin-bottom:5px;">Loading...</div>
+        <div class="prize">Prize: $500.00</div>
     </div>
-
     <div id="winnerSection" class="winner-box">
-        <div style="color: #10b981; font-weight: bold; font-size: 14px;">🏆 PREVIOUS WINNER</div>
-        <div id="winnerText" style="font-size: 18px; margin-top: 5px; font-weight: bold;"></div>
+        <div style="color: #10b981; font-weight: bold;">🏆 PREVIOUS WINNER</div>
+        <div id="winnerText" style="font-size: 18px; margin-top: 5px;"></div>
     </div>
-
-    <h3 class="left" style="margin-top: 30px; font-size: 16px; color: var(--dim);">YOUR TICKETS (MAX 50)</h3>
+    <h3 class="left">Your Tickets (Max 50)</h3>
     <table>
-        <thead><tr><th>#</th><th>Ticket Number</th><th>Claimed At</th></tr></thead>
+        <thead><tr><th>#</th><th>Number</th><th>Time</th></tr></thead>
         <tbody id="ticketList"></tbody>
     </table>
-
     <div class="footer">
         <button id="claimBtn" onclick="handleAdsgramClaim()">Watch Ad & Claim Ticket</button>
         <div id="cdText"></div>
     </div>
 
     <script>
-        // --- 1. CONFIGURATION ---
-        const SB_URL = 'https://xsfvgjouchblrargkcpc.supabase.co';
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhzZnZnam91Y2hibHJhcmdrY3BjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyNTU5NDcsImV4cCI6MjA4NzgzMTk0N30.BOSLhHlLls9yPyLDRUowoFVEbqMQpeUTg4Y7cEEJz14';
-        const ADS_ID = '24316';
-        
-        const tg = window.Telegram.WebApp;
-        tg.expand();
+        // Use 'var' to avoid "already declared" SyntaxError
+        var SB_URL = 'https://xsfvgjouchblrargkcpc.supabase.co';
+        var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhzZnZnam91Y2hibHJhcmdrY3BjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyNTU5NDcsImV4cCI6MjA4NzgzMTk0N30.BOSLhHlLls9yPyLDRUowoFVEbqMQpeUTg4Y7cEEJz14';
+        var ADS_ID = '24316';
+        var supabaseClient;
 
-        const supabase = window.supabase.createClient(SB_URL, SB_KEY);
-        let userTickets = [];
-        const MAX_TICKETS = 50;
-
-        // --- 2. INITIALIZATION ---
-        async function init() {
-            updateUIStatus();
-            fetchUserTickets();
-            checkWinner();
-            // Global ticker for countdowns
-            setInterval(updateUIStatus, 1000);
+        if (!supabaseClient) {
+            supabaseClient = window.supabase.createClient(SB_URL, SB_KEY);
         }
 
-        function updateUIStatus() {
-            const now = new Date();
-            const hr = now.getHours();
-            const statusEl = document.getElementById('lotteryStatus');
-            const btn = document.getElementById('claimBtn');
+        var tg = window.Telegram.WebApp;
+        var userTickets = [];
 
-            // Logic: Open 5 PM (17:00) to 12 AM (00:00)
-            const isOpen = (hr >= 17 || hr < 0);
-            
-            if (hr >= 14 && hr < 17) {
-                statusEl.innerText = "Results live! Next entry at 5:00 PM";
-                btn.disabled = true;
-            } else if (isOpen) {
-                statusEl.innerText = "Status: OPEN • Ends at Midnight";
-                checkCooldown();
-            } else {
-                statusEl.innerText = "Status: CLOSED • Opens at 5:00 PM";
-                btn.disabled = true;
-            }
-        }
+        // Define functions on window to ensure they are globally accessible
+        window.fetchUserTickets = async function() {
+            var uid = tg.initDataUnsafe.user?.id?.toString() || "guest";
+            var { data } = await supabaseClient.from('lottery_tickets').select('*').eq('user_id', uid).order('created_at', { ascending: false });
+            if (data) { userTickets = data; renderTickets(); }
+        };
 
-        async function fetchUserTickets() {
-            const uid = tg.initDataUnsafe.user?.id?.toString() || "guest";
-            const { data } = await supabase.from('lottery_tickets')
-                .select('*').eq('user_id', uid).order('created_at', { ascending: false });
-            if (data) {
-                userTickets = data;
-                renderTickets();
-            }
-        }
-
-        function renderTickets() {
-            const html = userTickets.map((t, i) => `
-                <tr>
-                    <td>${userTickets.length - i}</td>
-                    <td style="color: var(--accent); font-weight: bold;">${t.ticket_number}</td>
-                    <td>${new Date(t.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
-                </tr>
-            `).join('');
+        window.renderTickets = function() {
+            var html = userTickets.map((t, i) => `<tr><td>${userTickets.length - i}</td><td style="font-weight:bold;color:var(--accent)">${t.ticket_number}</td><td>${new Date(t.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td></tr>`).join('');
             document.getElementById('ticketList').innerHTML = html || '<tr><td colspan="3">No tickets yet</td></tr>';
-        }
+        };
 
-        function checkCooldown() {
-            const last = localStorage.getItem('last_claim');
-            const btn = document.getElementById('claimBtn');
-            const cd = document.getElementById('cdText');
-
-            if (last) {
-                const diff = Date.now() - parseInt(last);
-                const remain = (10 * 60 * 1000) - diff;
-
-                if (remain > 0) {
-                    btn.disabled = true;
-                    const m = Math.floor(remain / 60000);
-                    const s = Math.floor((remain % 60000) / 1000);
-                    cd.innerText = `New ticket in ${m}m ${s}s`;
-                    return;
-                }
-            }
-
-            if (userTickets.length >= MAX_TICKETS) {
-                btn.disabled = true;
-                cd.innerText = "Daily maximum reached (50/50)";
-            } else {
-                btn.disabled = false;
-                cd.innerText = "";
-            }
-        }
-
-        // --- 3. ADS & S2S REWARD FLOW ---
-        async function handleAdsgramClaim() {
-            const btn = document.getElementById('claimBtn');
-            const userId = tg.initDataUnsafe.user?.id?.toString() || "guest";
-            
-            // Initialize Adsgram with the user ID so the S2S callback works
-            const AdController = window.Adsgram.init({ blockId: ADS_ID });
+        window.handleAdsgramClaim = async function() {
+            var btn = document.getElementById('claimBtn');
+            var uid = tg.initDataUnsafe.user?.id?.toString() || "guest";
+            var AdController = window.Adsgram.init({ blockId: ADS_ID });
             
             try {
-                btn.disabled = true;
-                btn.innerText = "Loading Ad...";
-                
-                const result = await AdController.show({ userId: userId });
-                
+                btn.disabled = true; btn.innerText = "Loading Ad...";
+                var result = await AdController.show({ userId: uid });
                 if (result.done) {
-                    btn.innerText = "Verifying Reward...";
-                    // We wait for the Edge Function (Rapid Responder) to finish the DB insert
+                    btn.innerText = "Verifying...";
                     setTimeout(async () => {
                         localStorage.setItem('last_claim', Date.now().toString());
-                        await fetchUserTickets(); // Refresh list
+                        await window.fetchUserTickets();
                         tg.HapticFeedback.notificationOccurred('success');
                         btn.innerText = "Watch Ad & Claim Ticket";
                         updateUIStatus();
                     }, 3000);
-                } else {
-                    btn.innerText = "Watch Ad & Claim Ticket";
-                    updateUIStatus();
-                }
-            } catch (err) {
-                alert("Ad could not load. Check internet.");
-                btn.innerText = "Watch Ad & Claim Ticket";
-                updateUIStatus();
-            }
+                } else { updateUIStatus(); btn.innerText = "Watch Ad & Claim Ticket"; }
+            } catch (err) { alert("Ad error"); updateUIStatus(); }
+        };
+
+        function updateUIStatus() {
+            var now = new Date(), hr = now.getHours(), btn = document.getElementById('claimBtn'), statusEl = document.getElementById('lotteryStatus');
+            var isOpen = (hr >= 17 || hr < 0);
+            if (isOpen) {
+                statusEl.innerText = "Status: OPEN";
+                var last = localStorage.getItem('last_claim');
+                if (last && (Date.now() - parseInt(last) < 600000)) {
+                    btn.disabled = true;
+                    var rem = Math.ceil((600000 - (Date.now() - parseInt(last))) / 1000);
+                    document.getElementById('cdText').innerText = "Next ticket in " + Math.floor(rem/60) + "m " + (rem%60) + "s";
+                } else { btn.disabled = (userTickets.length >= 50); document.getElementById('cdText').innerText = ""; }
+            } else { statusEl.innerText = "Status: CLOSED (Opens 5PM)"; btn.disabled = true; }
         }
 
         async function checkWinner() {
             if (new Date().getHours() >= 14) {
-                const { data } = await supabase.rpc('pick_daily_winner');
+                var { data } = await supabaseClient.rpc('pick_daily_winner');
                 if (data && data[0]) {
                     document.getElementById('winnerSection').style.display = 'block';
-                    document.getElementById('winnerText').innerText = `Ticket #${data[0].winning_number}`;
+                    document.getElementById('winnerText').innerText = "Ticket #" + data[0].winning_number;
                 }
             }
         }
 
-        init();
+        tg.expand();
+        window.fetchUserTickets();
+        checkWinner();
+        setInterval(updateUIStatus, 1000);
     </script>
 </body>
 </html>
