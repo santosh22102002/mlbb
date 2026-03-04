@@ -63,110 +63,69 @@
     <div id="cooldown-text"></div>
 
     <script>
-        // 1. CONFIGURATION
-        const firebaseConfig = { apiKey: "AIzaSyA3-qDlnHoG2YlleWGfZy6wNBWkkNJ54x8", projectId: "upwebapp-19b3a", appId: "1:746730266775:web:ae3ef6b81d83cd9427c9d2" };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const AdController = window.Adsgram.init({ blockId: "24315" });
-        const tg = window.Telegram.WebApp;
-        tg.expand();
+        // 1. Move variable declarations to the top (Global Scope)
+const tg = window.Telegram.WebApp; 
+let AdController; // Don't init here yet
+let userTickets = [];
+let nextClaimTime = 0;
+let userId = "guest_user";
 
-        const userId = tg.initDataUnsafe.user?.id || "guest_user";
-        let userTickets = [];
-        let nextClaimTime = 0;
+// 2. Initialize Firebase (Keep your config here)
+const firebaseConfig = { 
+    apiKey: "AIzaSyA3-qDlnHoG2YlleWGfZy6wNBWkkNJ54x8", 
+    projectId: "upwebapp-19b3a", 
+    appId: "1:746730266775:web:ae3ef6b81d83cd9427c9d2" 
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-        // 2. APP LOGIC
-        async function init() {
-            loadUserData();
-            checkGlobalWinner();
-            setInterval(updateUI, 1000);
-        }
+// 3. Main Initialization Function
+async function init() {
+    // Ensure TG is ready
+    tg.expand();
+    tg.ready();
+    
+    // Set userId safely
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        userId = tg.initDataUnsafe.user.id.toString();
+    }
 
-        async function loadUserData() {
-            const doc = await db.collection('users').doc(userId.toString()).get();
-            if (doc.exists) {
-                userTickets = doc.data().tickets || [];
-                nextClaimTime = doc.data().nextClaimTime || 0;
-                renderTickets();
-            }
-        }
+    // Initialize AdsGram safely
+    if (window.Adsgram) {
+        AdController = window.Adsgram.init({ blockId: "YOUR_ADSGRAM_BLOCK_ID" });
+    } else {
+        console.error("AdsGram SDK not loaded");
+    }
 
-        function renderTickets() {
-            const table = document.getElementById('ticket-table');
-            document.getElementById('count').innerText = userTickets.length;
-            table.innerHTML = "";
-            for (let i = 0; i < userTickets.length; i += 4) {
-                let row = table.insertRow();
-                for (let j = 0; j < 4; j++) {
-                    let cell = row.insertCell();
-                    cell.innerText = userTickets[i+j] || "-";
-                }
-            }
-        }
+    loadUserData();
+    checkGlobalWinner();
+    setInterval(updateUI, 1000);
+}
 
-        function updateUI() {
-            const now = new Date();
-            const h = now.getHours();
-            const timerEl = document.getElementById('lottery-timer');
-            const btn = document.getElementById('claim-btn');
+// 4. Update handleClaim to check for AdController
+async function handleClaim() {
+    if (!AdController) {
+        tg.showAlert("Ads are still loading, please wait a moment.");
+        return;
+    }
 
-            // 5 PM (17:00) to 12 AM (00:00) Open
-            const isOpen = (h >= 17 || h < 0);
-            timerEl.innerText = isOpen ? "Status: OPEN" : "Opens at 5:00 PM";
-            timerEl.style.color = isOpen ? "#2ecc71" : "#e74c3c";
-
-            if (!isOpen) {
-                btn.disabled = true;
-                btn.innerText = "LOTTERY CLOSED";
-                return;
-            }
-
-            if (userTickets.length >= 50) {
-                btn.disabled = true;
-                btn.innerText = "MAX TICKETS (50/50)";
-                return;
-            }
-
-            const wait = nextClaimTime - Date.now();
-            if (wait > 0) {
-                btn.disabled = true;
-                const m = Math.floor(wait / 60000);
-                const s = Math.floor((wait % 60000) / 1000);
-                btn.innerText = `NEXT TICKET IN ${m}:${s < 10 ? '0' : ''}${s}`;
-            } else {
-                btn.disabled = false;
-                btn.innerText = "CLAIM TICKET (Watch Ad)";
-            }
-        }
-
-        async function handleClaim() {
     try {
-        // Pass the userId to AdsGram so they can pass it to our server
-        const result = await AdController.show({ userId: userId.toString() });
-        
+        const result = await AdController.show({ userId: userId });
         if (result.done) {
             tg.showAlert("Ad finished! Your ticket is being processed...");
-            
-            // Wait 2 seconds for the server to finish, then reload data
             setTimeout(() => {
                 loadUserData(); 
                 tg.HapticFeedback.notificationOccurred('success');
             }, 2500);
         }
     } catch (e) {
+        console.error(e);
         tg.showAlert("Error playing ad.");
     }
 }
 
-        async function checkGlobalWinner() {
-            const res = await db.collection('results').doc('latest').get();
-            if (res.exists) {
-                document.getElementById('winner-box').style.display = 'block';
-                document.getElementById('win-num').innerText = res.data().winningTicket;
-            }
-        }
-
-        init();
+// 5. Start the app
+init();
     </script>
 </body>
 </html>
