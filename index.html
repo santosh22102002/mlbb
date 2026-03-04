@@ -144,15 +144,18 @@
                 const newNum = Math.floor(100000 + Math.random() * 900000);
                 const updatedTickets = [...myTickets, newNum];
 
-                userRef.update({
-                    tickets: updatedTickets,
-                    lastClaim: firebase.database.ServerValue.TIMESTAMP
-                }).then(() => {
-                    tg.showAlert("Success! Ticket #" + newNum + " claimed.");
-                }).catch(err => {
-                    tg.showAlert("Error: " + err.message);
-                });
-            }, 1500);
+                // Use this specific object to match the "now" variable in your rules
+const serverTimestamp = firebase.database.ServerValue.TIMESTAMP;
+
+userRef.update({
+    tickets: updatedTickets,
+    lastClaim: serverTimestamp 
+}).then(() => {
+    tg.showAlert("Success! Ticket #" + newNum + " claimed.");
+}).catch(err => {
+    console.error(err); // This will show the exact error in the console
+    tg.showAlert("Access Denied: Please wait 10 minutes between claims.");
+});
         }
 
         // Auto-refresh timers every second
