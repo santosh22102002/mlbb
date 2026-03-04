@@ -2,130 +2,179 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Daily Lottery</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://adsgram.ai/sdk/v1/adsgram.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Lottery TMA</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --tg-theme-bg-color: #ffffff;
-            --tg-theme-text-color: #000000;
-            --tg-theme-button-color: #248bed;
-            --tg-theme-button-text-color: #ffffff;
-            --tg-theme-hint-color: #999999;
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #38bdf8;
+            --text: #f1f5f9;
+            --disabled: #475569;
         }
         body {
-            font-family: sans-serif;
-            background-color: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-            margin: 20px;
-            padding-bottom: 50px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            margin: 0; padding: 20px;
+            display: flex; flex-direction: column;
         }
-        .left-align { text-align: left; }
-        .timer { color: #e74c3c; font-weight: bold; font-size: 1.1rem; margin: 5px 0; }
-        .prize { font-size: 1.5rem; color: #2ecc71; font-weight: 800; }
-        .spacer { height: 35px; }
-        .section-title { font-weight: bold; text-transform: uppercase; font-size: 0.9rem; margin-bottom: 10px; }
+        .left-align { text-align: left; margin-bottom: 5px; }
+        h1 { font-size: 24px; color: var(--accent); margin: 0; }
+        .timer-box { font-size: 14px; color: #94a3b8; }
+        .prize { font-size: 20px; font-weight: bold; margin-bottom: 20px; }
         
-        table { width: 100%; border-collapse: collapse; background: rgba(0,0,0,0.03); border-radius: 8px; overflow: hidden; }
-        td { border: 1px solid var(--tg-theme-hint-color); padding: 12px; text-align: center; font-family: monospace; font-weight: bold; width: 25%; }
+        .spacer { height: 30px; }
         
-        .claim-btn {
-            background-color: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
-            border: none; padding: 18px; border-radius: 12px;
-            font-size: 1rem; font-weight: bold; width: 100%; margin-top: 20px; cursor: pointer;
+        .section-title { font-size: 18px; border-bottom: 1px solid var(--disabled); padding-bottom: 5px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; border: 1px solid var(--disabled); text-align: center; }
+        
+        .claim-section {
+            position: fixed; bottom: 20px; left: 20px; right: 20px;
+            display: flex; flex-direction: column; align-items: center;
         }
-        .claim-btn:disabled { background-color: var(--tg-theme-hint-color); opacity: 0.6; }
-        #cooldown-text { text-align: center; font-size: 0.85rem; margin-top: 8px; color: var(--tg-theme-hint-color); }
-        #winner-box { display: none; background: #f1c40f; color: #000; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center; font-weight: bold; }
+        #claimBtn {
+            width: 100%; padding: 15px; border-radius: 12px; border: none;
+            background: var(--accent); color: white; font-weight: bold; font-size: 16px;
+            cursor: pointer; transition: 0.3s;
+        }
+        #claimBtn:disabled { background: var(--disabled); cursor: not-allowed; }
+        #cooldownText { margin-top: 8px; font-size: 12px; color: #f87171; }
     </style>
 </head>
 <body>
 
-    <div id="winner-box">🎉 LATEST WINNER: #<span id="win-num"></span> 🎉</div>
-
     <div class="left-align">
-        <h1 style="margin:0;">Daily Lottery</h1>
-        <div id="lottery-timer" class="timer">Checking status...</div>
-        <div class="prize">$500.00 PRIZE</div>
+        <h1 id="lotteryTitle">Daily Mega Draw</h1>
+        <div id="lotteryStatus" class="timer-box">Checking status...</div>
+        <div class="prize">Prize: $500.00</div>
     </div>
 
     <div class="spacer"></div>
 
-    <div class="section-title">Your Tickets (<span id="count">0</span>/50)</div>
-    <table id="ticket-table"></table>
+    <div class="section-title">Your Ticket Numbers</div>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Ticket ID</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+        <tbody id="ticketList">
+            </tbody>
+    </table>
 
-    <button id="claim-btn" class="claim-btn" onclick="handleClaim()">CLAIM TICKET (Watch Ad)</button>
-    <div id="cooldown-text"></div>
+    <div class="claim-section">
+        <button id="claimBtn" onclick="handleClaim()">Watch Ad & Claim Ticket</button>
+        <div id="cooldownText"></div>
+    </div>
 
     <script>
-        // 1. Move variable declarations to the top (Global Scope)
-const tg = window.Telegram.WebApp; 
-let AdController; // Don't init here yet
-let userTickets = [];
-let nextClaimTime = 0;
-let userId = "guest_user";
+        // --- CONFIGURATION ---
+        const SUPABASE_URL = 'https://xsfvgjouchblrargkcpc.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhzZnZnam91Y2hibHJhcmdrY3BjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyNTU5NDcsImV4cCI6MjA4NzgzMTk0N30.BOSLhHlLls9yPyLDRUowoFVEbqMQpeUTg4Y7cEEJz14';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// 2. Initialize Firebase (Keep your config here)
-const firebaseConfig = { 
-    apiKey: "AIzaSyA3-qDlnHoG2YlleWGfZy6wNBWkkNJ54x8", 
-    projectId: "upwebapp-19b3a", 
-    appId: "1:746730266775:web:ae3ef6b81d83cd9427c9d2" 
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+        let tickets = [];
+        let cooldownTimer = null;
+        const MAX_TICKETS = 50;
 
-// 3. Main Initialization Function
-async function init() {
-    // Ensure TG is ready
-    tg.expand();
-    tg.ready();
-    
-    // Set userId safely
-    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-        userId = tg.initDataUnsafe.user.id.toString();
-    }
+        // --- CORE LOGIC ---
+        function updateLotteryStatus() {
+            const now = new Date();
+            const hour = now.getHours();
+            const statusEl = document.getElementById('lotteryStatus');
+            const btn = document.getElementById('claimBtn');
 
-    // Initialize AdsGram safely
-    if (window.Adsgram) {
-        AdController = window.Adsgram.init({ blockId: "YOUR_ADSGRAM_BLOCK_ID" });
-    } else {
-        console.error("AdsGram SDK not loaded");
-    }
-
-    loadUserData();
-    checkGlobalWinner();
-    setInterval(updateUI, 1000);
-}
-
-// 4. Update handleClaim to check for AdController
-async function handleClaim() {
-    if (!AdController) {
-        tg.showAlert("Ads are still loading, please wait a moment.");
-        return;
-    }
-
-    try {
-        const result = await AdController.show({ userId: userId });
-        if (result.done) {
-            tg.showAlert("Ad finished! Your ticket is being processed...");
-            setTimeout(() => {
-                loadUserData(); 
-                tg.HapticFeedback.notificationOccurred('success');
-            }, 2500);
+            // Logic: Open 5 PM (17:00) to 12 AM (00:00)
+            const isOpen = (hour >= 17 || hour < 0);
+            
+            if (hour >= 14 && hour < 17) {
+                statusEl.innerText = "Status: Result Generated at 2 PM. Next draw at 5 PM.";
+                btn.disabled = true;
+            } else if (isOpen) {
+                statusEl.innerText = "Status: OPEN - Draw ends at midnight";
+                checkCooldown();
+            } else {
+                statusEl.innerText = "Status: CLOSED - Resumes at 5 PM";
+                btn.disabled = true;
+            }
         }
-    } catch (e) {
-        console.error(e);
-        tg.showAlert("Error playing ad.");
-    }
-}
 
-// 5. Start the app
-init();
+        function checkCooldown() {
+            const lastClaim = localStorage.getItem('lastClaimTime');
+            const btn = document.getElementById('claimBtn');
+            const cdText = document.getElementById('cooldownText');
+
+            if (lastClaim) {
+                const diff = Date.now() - parseInt(lastClaim);
+                const remaining = (10 * 60 * 1000) - diff;
+
+                if (remaining > 0) {
+                    btn.disabled = true;
+                    const mins = Math.floor(remaining / 60000);
+                    const secs = Math.floor((remaining % 60000) / 1000);
+                    cdText.innerText = `Next ticket available in ${mins}m ${secs}s`;
+                    setTimeout(checkCooldown, 1000);
+                    return;
+                }
+            }
+            
+            if (tickets.length >= MAX_TICKETS) {
+                btn.disabled = true;
+                cdText.innerText = "Daily limit of 50 tickets reached!";
+            } else {
+                btn.disabled = false;
+                cdText.innerText = "";
+            }
+        }
+
+        async function handleClaim() {
+            // ANTI-CHEAT: Check time again before processing
+            const lastClaim = localStorage.getItem('lastClaimTime');
+            if (lastClaim && (Date.now() - parseInt(lastClaim) < 600000)) {
+                alert("Nice try! Cooldown is still active.");
+                return;
+            }
+
+            // Simulate Ad Watching
+            document.getElementById('claimBtn').innerText = "Watching Ad...";
+            setTimeout(async () => {
+                const newTicket = Math.floor(Math.random() * (999999 - 100000 + 1)) + 100000;
+                
+                // Save to Supabase
+                const { error } = await supabase
+                    .from('lottery_tickets')
+                    .insert([{ ticket_number: newTicket, user_id: 'user_123' }]); // Replace with real TG ID
+
+                if (!error) {
+                    localStorage.setItem('lastClaimTime', Date.now().toString());
+                    tickets.push({ ticket_number: newTicket, created_at: new Date().toLocaleTimeString() });
+                    renderTickets();
+                    checkCooldown();
+                    document.getElementById('claimBtn').innerText = "Watch Ad & Claim Ticket";
+                }
+            }, 2000);
+        }
+
+        function renderTickets() {
+            const container = document.getElementById('ticketList');
+            container.innerHTML = tickets.map((t, i) => `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td><b>${t.ticket_number}</b></td>
+                    <td>${t.created_at}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Initialize
+        setInterval(updateLotteryStatus, 1000);
+        updateLotteryStatus();
     </script>
 </body>
 </html>
