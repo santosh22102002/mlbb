@@ -3,165 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Lottery App</title>
+    <title>Daily Lottery</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
-        :root {
-            --tg-theme-bg-color: #ffffff;
-            --tg-theme-button-color: #248bed;
-            --tg-theme-hint-color: #999999;
-        }
-        body { font-family: sans-serif; padding: 20px; background: var(--tg-theme-bg-color); color: #222; }
-        .left { text-align: left; }
-        .header { margin-bottom: 30px; }
+        :root { --tg-theme-bg-color: #ffffff; --tg-theme-button-color: #248bed; }
+        body { font-family: sans-serif; padding: 20px; background: var(--tg-theme-bg-color); color: #222; margin: 0; }
+        .header { text-align: left; margin-bottom: 20px; }
         h1 { margin: 0; font-size: 22px; color: var(--tg-theme-button-color); }
-        .prize { font-size: 24px; font-weight: bold; margin-top: 10px; }
-        .timer { color: var(--tg-theme-hint-color); font-size: 14px; margin: 5px 0; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .timer { font-size: 14px; color: gray; margin: 5px 0; }
+        .prize { font-size: 24px; font-weight: bold; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         td { border: 1px solid #ddd; padding: 12px; text-align: center; font-family: monospace; font-size: 18px; }
-        
         .claim-area { position: fixed; bottom: 20px; left: 0; right: 0; padding: 0 20px; text-align: center; }
-        button { width: 100%; padding: 16px; border-radius: 12px; border: none; background: var(--tg-theme-button-color); color: white; font-weight: bold; font-size: 16px; transition: 0.3s; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        .cd-label { margin-top: 8px; font-size: 12px; color: var(--tg-theme-hint-color); }
+        button { width: 100%; padding: 16px; border-radius: 12px; border: none; background: var(--tg-theme-button-color); color: white; font-weight: bold; font-size: 16px; }
+        button:disabled { background: #ccc; }
+        .cd-label { margin-top: 8px; font-size: 12px; color: gray; }
     </style>
 </head>
 <body>
 
-    <div class="header left">
-        <h1 id="lotteryTitle">Daily Rewards Lottery</h1>
-        <div id="lotteryTimer" class="timer">Loading schedule...</div>
-        <div class="prize">Prize: 5,000 USDT</div>
-    </div>
-
-    <div class="left">
-        <h3 style="margin-bottom: 5px;">Your Ticket Numbers</h3>
-        <div id="countInfo" style="font-size: 12px; color: gray; margin-bottom: 10px;">(0 / 50 claimed)</div>
+    <div class="header">
+        <h1 id="lotteryTitle">Daily Lottery</h1>
+        <div id="lotteryTimer" class="timer">Connecting to server...</div>
+        <div class="prize">Prize: 1,000 USDT</div>
+        <hr>
+        <h3>Your Ticket Numbers</h3>
+        <div id="countInfo" style="font-size: 12px; color: gray;">(0/50 claimed)</div>
         <table id="ticketTable"></table>
     </div>
 
     <div class="claim-area">
-        <button id="claimBtn" onclick="handleClaim()">Watch Ad to Claim Ticket</button>
-        <div id="cooldownLabel" class="cd-label">Ready to start!</div>
+        <button id="claimBtn" disabled>Loading...</button>
+        <div id="cooldownLabel" class="cd-label">Please wait...</div>
     </div>
 
     <script>
-        // --- 1. CONFIGURATION ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyA3-qDlnHoG2YlleWGfZy6wNBWkkNJ54x8",
-            authDomain: "upwebapp-19b3a.firebaseapp.com",
-            databaseURL: "https://upwebapp-19b3a-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "upwebapp-19b3a",
-            appId: "1:746730266775:web:ae3ef6b81d83cd9427c9d2"
-        };
+        // 1. YOUR FIREBASE CONFIG (MUST FILL THIS IN)
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyA3-qDlnHoG2YlleWGfZy6wNBWkkNJ54x8",
+  authDomain: "upwebapp-19b3a.firebaseapp.com",
+  databaseURL: "https://upwebapp-19b3a-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "upwebapp-19b3a",
+  storageBucket: "upwebapp-19b3a.firebasestorage.app",
+  messagingSenderId: "746730266775",
+  appId: "1:746730266775:web:ae3ef6b81d83cd9427c9d2",
+  measurementId: "G-9PF085FM41"
+};
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-
-        // Identify User
         const tg = window.Telegram.WebApp;
-        const userId = tg.initDataUnsafe?.user?.id || "guest_user";
-        const userRef = db.ref('users/' + userId);
-
+        
         let myTickets = [];
         let lastClaim = 0;
         const COOLDOWN_MS = 10 * 60 * 1000;
 
-        // --- 2. DATA SYNC ---
-        userRef.on('value', (snap) => {
-            const data = snap.val();
-            if (data) {
-                myTickets = data.tickets || [];
-                lastClaim = data.lastClaim || 0;
+        // 2. INITIALIZE APP
+        async function initApp() {
+            try {
+                // Anonymous Auth is required for Security Rules to see "auth.uid"
+                await firebase.auth().signInAnonymously();
+                
+                const userId = tg.initDataUnsafe?.user?.id || "web_user";
+                const userRef = db.ref('users/' + userId);
+
+                // Live Sync
+                userRef.on('value', (snap) => {
+                    const data = snap.val();
+                    myTickets = data?.tickets || [];
+                    lastClaim = data?.lastClaim || 0;
+                    renderUI();
+                });
+            } catch (e) {
+                document.getElementById('lotteryTimer').innerText = "Config Error!";
+                console.error(e);
             }
-            renderTickets();
-        });
+        }
 
-        function renderTickets() {
+        function renderUI() {
+            // Update Table
             const table = document.getElementById('ticketTable');
-            const countInfo = document.getElementById('countInfo');
             table.innerHTML = "";
-            countInfo.innerText = `(${myTickets.length} / 50 claimed)`;
-
-            // Render in table form (3 columns)
+            document.getElementById('countInfo').innerText = `(${myTickets.length}/50 claimed)`;
+            
             for (let i = 0; i < myTickets.length; i += 3) {
                 let row = table.insertRow();
                 for (let j = 0; j < 3; j++) {
                     let cell = row.insertCell();
-                    cell.innerText = myTickets[i + j] || "";
-                    if (!myTickets[i+j]) cell.style.border = "none";
+                    cell.innerText = myTickets[i + j] || "-";
                 }
             }
-            updateTimers();
+            updateStatus();
         }
 
-        // --- 3. TIMERS & LOGIC ---
-        function updateTimers() {
+        function updateStatus() {
             const now = new Date();
             const hour = now.getHours();
-            const timerEl = document.getElementById('lotteryTimer');
             const btn = document.getElementById('claimBtn');
             const cdLabel = document.getElementById('cooldownLabel');
+            const timerEl = document.getElementById('lotteryTimer');
 
-            // Lottery Schedule Logic
-            // Open: 5 PM (17) to 12 PM (Midnight)
-            // Result: 2 PM (14)
-            if (hour >= 17 || hour < 0) {
-                timerEl.innerText = "Status: OPEN (Closes at 12 PM)";
-            } else if (hour >= 14 && hour < 17) {
-                timerEl.innerText = "Status: WINNERS DRAWN (New Round at 5 PM)";
-            } else {
-                timerEl.innerText = "Status: CLOSED (Opens at 5 PM)";
-            }
+            // Schedule: Open 5pm (17), Result 2pm (14)
+            if (hour >= 17 || hour < 0) timerEl.innerText = "Status: OPEN";
+            else if (hour >= 14 && hour < 17) timerEl.innerText = "Status: DRAWING RESULTS";
+            else timerEl.innerText = "Status: CLOSED (Opens at 5PM)";
 
             // Cooldown Logic
             const elapsed = Date.now() - lastClaim;
             if (myTickets.length >= 50) {
                 btn.disabled = true;
                 btn.innerText = "Daily Limit Reached";
-                cdLabel.innerText = "Come back tomorrow!";
             } else if (elapsed < COOLDOWN_MS) {
                 btn.disabled = true;
-                const remain = Math.ceil((COOLDOWN_MS - elapsed) / 1000);
-                btn.innerText = "Ad Cooldown...";
-                cdLabel.innerText = `Next ticket in ${Math.floor(remain/60)}m ${remain%60}s`;
+                const rem = Math.ceil((COOLDOWN_MS - elapsed) / 1000);
+                btn.innerText = "Ad Cooling Down...";
+                cdLabel.innerText = `Wait ${Math.floor(rem/60)}m ${rem%60}s`;
             } else {
                 btn.disabled = false;
                 btn.innerText = "Watch Ad to Claim Ticket";
-                cdLabel.innerText = "Ticket available now!";
+                cdLabel.innerText = "Ready!";
             }
         }
 
         async function handleClaim() {
-            // Simulated Reward Ad
-            tg.HapticFeedback.impactOccurred('medium');
-            alert("Watching Reward Ad... (100% Loaded)");
+            tg.HapticFeedback.impactOccurred('light');
+            alert("Watching Ad... (Simulated)");
             
             setTimeout(() => {
-                // Generate Ticket 100000 - 999999
                 const newNum = Math.floor(100000 + Math.random() * 900000);
                 const updatedTickets = [...myTickets, newNum];
+                const userId = tg.initDataUnsafe?.user?.id || "web_user";
 
-                // Use this specific object to match the "now" variable in your rules
-const serverTimestamp = firebase.database.ServerValue.TIMESTAMP;
-
-userRef.update({
-    tickets: updatedTickets,
-    lastClaim: serverTimestamp 
-}).then(() => {
-    tg.showAlert("Success! Ticket #" + newNum + " claimed.");
-}).catch(err => {
-    console.error(err); // This will show the exact error in the console
-    tg.showAlert("Access Denied: Please wait 10 minutes between claims.");
-});
+                db.ref('users/' + userId).update({
+                    tickets: updatedTickets,
+                    lastClaim: firebase.database.ServerValue.TIMESTAMP
+                }).then(() => {
+                    tg.showAlert("Success! Ticket #" + newNum);
+                }).catch(err => {
+                    tg.showAlert("Denied: " + err.message);
+                });
+            }, 1000);
         }
 
-        // Auto-refresh timers every second
-        setInterval(updateTimers, 1000);
+        document.getElementById('claimBtn').onclick = handleClaim;
+        setInterval(updateStatus, 1000);
+        
         tg.ready();
         tg.expand();
+        initApp();
     </script>
 </body>
 </html>
