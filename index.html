@@ -3,47 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Lottery</title>
+    <title>Daily Lottery Ticket</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700;900&display=swap" rel="stylesheet">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
-        :root { --tg-theme-bg-color: #ffffff; --tg-theme-button-color: #248bed; }
-        body { font-family: sans-serif; padding: 20px; background: var(--tg-theme-bg-color); color: #222; margin: 0; }
-        .header { text-align: left; margin-bottom: 20px; }
-        h1 { margin: 0; font-size: 22px; color: var(--tg-theme-button-color); }
-        .timer { font-size: 14px; color: gray; margin: 5px 0; }
-        .prize { font-size: 24px; font-weight: bold; margin-bottom: 20px; }
+        :root {
+            --bg-paper: #f9f7f2;
+            --accent-blue: #248bed;
+            --text-main: #333333;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #e0e0e0; /* Darker background to make "paper" pop */
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            text-transform: uppercase; /* ALL CAPS */
+        }
+
+        /* The Ticket Container */
+        .ticket {
+            background: var(--bg-paper);
+            padding: 25px;
+            border-radius: 4px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            position: relative;
+            min-height: 80vh;
+        }
+
+        /* Serrated/Tear-off edge effect top/bottom */
+        .ticket::before {
+            content: "";
+            position: absolute;
+            top: -10px; left: 0; right: 0;
+            height: 10px;
+            background-size: 20px 20px;
+            background-image: radial-gradient(circle at 10px -5px, transparent 12px, var(--bg-paper) 13px);
+        }
+
+        h1 { font-weight: 900; font-size: 26px; margin: 0; color: var(--accent-blue); letter-spacing: 1px; }
+        .timer { font-size: 13px; margin: 10px 0; font-weight: 700; opacity: 0.7; }
+        .prize { font-size: 28px; font-weight: 900; margin: 15px 0; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+
+        /* Ticket Numbers Table Style */
+        .ticket-list-title { margin-top: 30px; font-size: 16px; font-weight: 900; }
+        
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        td { border: 1px solid #ddd; padding: 12px; text-align: center; font-family: monospace; font-size: 18px; }
-        .claim-area { position: fixed; bottom: 20px; left: 0; right: 0; padding: 0 20px; text-align: center; }
-        button { width: 100%; padding: 16px; border-radius: 12px; border: none; background: var(--tg-theme-button-color); color: white; font-weight: bold; font-size: 16px; }
-        button:disabled { background: #ccc; }
-        .cd-label { margin-top: 8px; font-size: 12px; color: gray; }
+        td { 
+            padding: 15px 5px; 
+            text-align: center; 
+            font-size: 20px; 
+            font-weight: 900;
+            border: none; /* Removed Border Lines */
+            letter-spacing: 2px;
+        }
+
+        /* Claim Button Section */
+        .action-zone {
+            margin-top: 40px;
+            border-top: 2px dashed #ccc; /* Tear-off line */
+            padding-top: 30px;
+            text-align: center;
+        }
+
+        button {
+            width: 100%;
+            padding: 18px;
+            background-color: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 0; /* Square button for ticket look */
+            font-family: 'Roboto', sans-serif;
+            font-weight: 900;
+            font-size: 18px;
+            text-transform: uppercase;
+            box-shadow: 0 4px 0px #1a66ad;
+        }
+
+        button:active { transform: translateY(2px); box-shadow: 0 2px 0px #1a66ad; }
+        button:disabled { background-color: #bbb; box-shadow: none; opacity: 0.6; }
+
+        .status-msg { margin-top: 10px; font-size: 12px; font-weight: 700; color: #888; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1 id="lotteryTitle">Daily Lottery</h1>
-        <div id="lotteryTimer" class="timer">Connecting to server...</div>
-        <div class="prize">Prize: 1,000 USDT</div>
-        <hr>
-        <h3>Your Ticket Numbers</h3>
-        <div id="countInfo" style="font-size: 12px; color: gray;">(0/50 claimed)</div>
-        <table id="ticketTable"></table>
-    </div>
+    <div class="ticket">
+        <h1>DAILY LOTTERY</h1>
+        <div id="lotteryTimer" class="timer">LOADING STATUS...</div>
+        <div class="prize">PRIZE: 1,000 USDT</div>
 
-    <div class="claim-area">
-        <button id="claimBtn" disabled>Loading...</button>
-        <div id="cooldownLabel" class="cd-label">Please wait...</div>
+        <div class="ticket-list-title">YOUR TICKETS (<span id="count">0</span>/50)</div>
+        <table id="ticketTable">
+            </table>
+
+        <div class="action-zone">
+            <button id="claimBtn" disabled>CONNECTING...</button>
+            <div id="cooldownLabel" class="status-msg">PLEASE WAIT...</div>
+        </div>
     </div>
 
     <script>
-        // 1. YOUR FIREBASE CONFIG (MUST FILL THIS IN)
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
+        // --- CONFIGURATION ---
+        const firebaseConfig = {
   apiKey: "AIzaSyA3-qDlnHoG2YlleWGfZy6wNBWkkNJ54x8",
   authDomain: "upwebapp-19b3a.firebaseapp.com",
   databaseURL: "https://upwebapp-19b3a-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -62,16 +128,12 @@ const firebaseConfig = {
         let lastClaim = 0;
         const COOLDOWN_MS = 10 * 60 * 1000;
 
-        // 2. INITIALIZE APP
         async function initApp() {
             try {
-                // Anonymous Auth is required for Security Rules to see "auth.uid"
                 await firebase.auth().signInAnonymously();
-                
-                const userId = tg.initDataUnsafe?.user?.id || "web_user";
+                const userId = tg.initDataUnsafe?.user?.id || "WEB_USER";
                 const userRef = db.ref('users/' + userId);
 
-                // Live Sync
                 userRef.on('value', (snap) => {
                     const data = snap.val();
                     myTickets = data?.tickets || [];
@@ -79,22 +141,20 @@ const firebaseConfig = {
                     renderUI();
                 });
             } catch (e) {
-                document.getElementById('lotteryTimer').innerText = "Config Error!";
-                console.error(e);
+                document.getElementById('lotteryTimer').innerText = "ERROR CONNECTING";
             }
         }
 
         function renderUI() {
-            // Update Table
             const table = document.getElementById('ticketTable');
             table.innerHTML = "";
-            document.getElementById('countInfo').innerText = `(${myTickets.length}/50 claimed)`;
+            document.getElementById('count').innerText = myTickets.length;
             
             for (let i = 0; i < myTickets.length; i += 3) {
                 let row = table.insertRow();
                 for (let j = 0; j < 3; j++) {
                     let cell = row.insertCell();
-                    cell.innerText = myTickets[i + j] || "-";
+                    cell.innerText = myTickets[i + j] || "";
                 }
             }
             updateStatus();
@@ -107,65 +167,49 @@ const firebaseConfig = {
             const cdLabel = document.getElementById('cooldownLabel');
             const timerEl = document.getElementById('lotteryTimer');
 
-            // Schedule: Open 5pm (17), Result 2pm (14)
-            if (hour >= 17 || hour < 0) timerEl.innerText = "Status: OPEN";
-            else if (hour >= 14 && hour < 17) timerEl.innerText = "Status: DRAWING RESULTS";
-            else timerEl.innerText = "Status: CLOSED (Opens at 5PM)";
+            const isLotteryOpen = (hour >= 17 || hour < 0);
+            
+            if (isLotteryOpen) timerEl.innerText = "STATUS: OPEN FOR ENTRIES";
+            else if (hour >= 14 && hour < 17) timerEl.innerText = "STATUS: GENERATING RESULTS";
+            else timerEl.innerText = "STATUS: CLOSED (OPENS AT 5PM)";
 
-            // Cooldown Logic
             const elapsed = Date.now() - lastClaim;
-            if (myTickets.length >= 50) {
+            
+            if (!isLotteryOpen) {
                 btn.disabled = true;
-                btn.innerText = "Daily Limit Reached";
+                btn.innerText = "LOTTERY CLOSED";
+                cdLabel.innerText = "NEXT ROUND AT 17:00";
+            } else if (myTickets.length >= 50) {
+                btn.disabled = true;
+                btn.innerText = "LIMIT REACHED";
+                cdLabel.innerText = "50 TICKETS MAX PER DAY";
             } else if (elapsed < COOLDOWN_MS) {
                 btn.disabled = true;
                 const rem = Math.ceil((COOLDOWN_MS - elapsed) / 1000);
-                btn.innerText = "Ad Cooling Down...";
-                cdLabel.innerText = `Wait ${Math.floor(rem/60)}m ${rem%60}s`;
+                btn.innerText = "COOLDOWN ACTIVE";
+                cdLabel.innerText = `NEXT CLAIM IN: ${Math.floor(rem/60)}M ${rem%60}S`;
             } else {
                 btn.disabled = false;
-                btn.innerText = "Watch Ad to Claim Ticket";
-                cdLabel.innerText = "Ready!";
+                btn.innerText = "WATCH AD & CLAIM";
+                cdLabel.innerText = "READY TO PRINT TICKET";
             }
         }
 
         async function handleClaim() {
-    const now = new Date();
-    const hour = now.getHours();
-    
-    // 1. Strict Time Gate (5 PM to Midnight)
-    const isLotteryOpen = (hour >= 17 || hour < 0);
-    
-    if (!isLotteryOpen) {
-        tg.showAlert("The lottery is closed! It opens daily at 5:00 PM.");
-        return;
-    }
+            tg.HapticFeedback.impactOccurred('medium');
+            alert("WATCHING REWARD VIDEO..."); 
+            
+            setTimeout(() => {
+                const newNum = Math.floor(100000 + Math.random() * 900000);
+                const updatedTickets = [...myTickets, newNum];
+                const userId = tg.initDataUnsafe?.user?.id || "WEB_USER";
 
-    // 2. Ticket Limit Gate
-    if (myTickets.length >= 50) {
-        tg.showAlert("You've reached the daily limit of 50 tickets!");
-        return;
-    }
-
-    // 3. Proceed with Ad and Claim
-    tg.HapticFeedback.impactOccurred('light');
-    alert("Watching Ad..."); // Replace with real Ad SDK later
-    
-    setTimeout(() => {
-        const newNum = Math.floor(100000 + Math.random() * 900000);
-        const updatedTickets = [...myTickets, newNum];
-
-        db.ref('users/' + userId).update({
-            tickets: updatedTickets,
-            lastClaim: firebase.database.ServerValue.TIMESTAMP
-        }).then(() => {
-            tg.showAlert("Ticket #" + newNum + " claimed successfully!");
-        }).catch(err => {
-            tg.showAlert("Error: Please wait for the cooldown.");
-        });
-    }, 2000);
-}
-
+                db.ref('users/' + userId).update({
+                    tickets: updatedTickets,
+                    lastClaim: firebase.database.ServerValue.TIMESTAMP
+                }).catch(err => tg.showAlert("DENIED: " + err.message));
+            }, 1500);
+        }
 
         document.getElementById('claimBtn').onclick = handleClaim;
         setInterval(updateStatus, 1000);
