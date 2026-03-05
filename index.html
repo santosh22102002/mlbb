@@ -130,24 +130,42 @@ const firebaseConfig = {
         }
 
         async function handleClaim() {
-            tg.HapticFeedback.impactOccurred('light');
-            alert("Watching Ad... (Simulated)");
-            
-            setTimeout(() => {
-                const newNum = Math.floor(100000 + Math.random() * 900000);
-                const updatedTickets = [...myTickets, newNum];
-                const userId = tg.initDataUnsafe?.user?.id || "web_user";
+    const now = new Date();
+    const hour = now.getHours();
+    
+    // 1. Strict Time Gate (5 PM to Midnight)
+    const isLotteryOpen = (hour >= 17 || hour < 0);
+    
+    if (!isLotteryOpen) {
+        tg.showAlert("The lottery is closed! It opens daily at 5:00 PM.");
+        return;
+    }
 
-                db.ref('users/' + userId).update({
-                    tickets: updatedTickets,
-                    lastClaim: firebase.database.ServerValue.TIMESTAMP
-                }).then(() => {
-                    tg.showAlert("Success! Ticket #" + newNum);
-                }).catch(err => {
-                    tg.showAlert("Denied: " + err.message);
-                });
-            }, 1000);
-        }
+    // 2. Ticket Limit Gate
+    if (myTickets.length >= 50) {
+        tg.showAlert("You've reached the daily limit of 50 tickets!");
+        return;
+    }
+
+    // 3. Proceed with Ad and Claim
+    tg.HapticFeedback.impactOccurred('light');
+    alert("Watching Ad..."); // Replace with real Ad SDK later
+    
+    setTimeout(() => {
+        const newNum = Math.floor(100000 + Math.random() * 900000);
+        const updatedTickets = [...myTickets, newNum];
+
+        db.ref('users/' + userId).update({
+            tickets: updatedTickets,
+            lastClaim: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+            tg.showAlert("Ticket #" + newNum + " claimed successfully!");
+        }).catch(err => {
+            tg.showAlert("Error: Please wait for the cooldown.");
+        });
+    }, 2000);
+}
+
 
         document.getElementById('claimBtn').onclick = handleClaim;
         setInterval(updateStatus, 1000);
