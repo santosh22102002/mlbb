@@ -174,34 +174,60 @@
         }
 
         function updateStatus() {
-            const now = new Date();
-            const hour = now.getHours();
-            const btn = document.getElementById('claimBtn');
-            const cdLabel = document.getElementById('cooldownLabel');
-            const timerEl = document.getElementById('lotteryTimer');
+    const now = new Date();
+    const hour = now.getHours();
+    const btn = document.getElementById('claimBtn');
+    const cdLabel = document.getElementById('cooldownLabel');
+    const timerEl = document.getElementById('lotteryTimer');
 
-            const isLotteryOpen = (hour >= 17 || hour < 0);
-            if (isLotteryOpen) timerEl.innerText = "STATUS: OPEN FOR ENTRIES";
-            else if (hour >= 14 && hour < 17) timerEl.innerText = "STATUS: GENERATING RESULTS";
-            else timerEl.innerText = "STATUS: CLOSED (OPENS AT 5PM)";
+    // Define target times
+    let target = new Date();
+    let statusText = "";
+    let isLotteryOpen = false;
 
-            const elapsed = Date.now() - lastClaim;
-            if (!isLotteryOpen) {
-                btn.disabled = true; btn.innerText = "LOTTERY CLOSED";
-                cdLabel.innerText = "NEXT ROUND AT 17:00";
-            } else if (myTickets.length >= 50) {
-                btn.disabled = true; btn.innerText = "LIMIT REACHED";
-                cdLabel.innerText = "50 TICKETS MAX PER DAY";
-            } else if (elapsed < COOLDOWN_MS) {
-                btn.disabled = true;
-                const rem = Math.ceil((COOLDOWN_MS - elapsed) / 1000);
-                btn.innerText = "COOLDOWN ACTIVE";
-                cdLabel.innerText = `NEXT CLAIM IN: ${Math.floor(rem/60)}M ${rem%60}S`;
-            } else {
-                btn.disabled = false; btn.innerText = "WATCH AD & CLAIM";
-                cdLabel.innerText = "READY TO PRINT TICKET";
-            }
-        }
+    if (hour >= 17 || hour < 0) {
+        // OPEN: Target is Midnight (Close)
+        statusText = "STATUS: OPEN | CLOSES IN: ";
+        target.setHours(24, 0, 0, 0); 
+        isLotteryOpen = true;
+    } else if (hour >= 14 && hour < 17) {
+        // RESULT: Target is 5 PM (Next Round)
+        statusText = "STATUS: DRAWING | NEXT ROUND IN: ";
+        target.setHours(17, 0, 0, 0);
+    } else {
+        // CLOSED: Target is 5 PM (Open)
+        statusText = "STATUS: CLOSED | OPENS IN: ";
+        target.setHours(17, 0, 0, 0);
+    }
+
+    // Calculate Countdown
+    const diff = target - now;
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+
+    // Format with leading zeros: 00:00:00
+    const timeString = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    timerEl.innerText = statusText + timeString;
+
+    // Handle Cooldown and Button States
+    const elapsed = Date.now() - lastClaim;
+    if (!isLotteryOpen) {
+        btn.disabled = true;
+        btn.innerText = "LOTTERY CLOSED";
+    } else if (myTickets.length >= 50) {
+        btn.disabled = true;
+        btn.innerText = "LIMIT REACHED";
+    } else if (elapsed < COOLDOWN_MS) {
+        btn.disabled = true;
+        const rem = Math.ceil((COOLDOWN_MS - elapsed) / 1000);
+        btn.innerText = `COOLDOWN: ${Math.floor(rem/60)}M ${rem%60}S`;
+    } else {
+        btn.disabled = false;
+        btn.innerText = "WATCH AD & CLAIM";
+    }
+}
+
 
         async function handleClaim() {
             tg.HapticFeedback.impactOccurred('medium');
