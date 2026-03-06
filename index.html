@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Mini Lottery</title>
+    <title>Mini Lottery</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
@@ -20,32 +19,33 @@
     </script>
 
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--tg-theme-bg-color, #ffffff); color: var(--tg-theme-text-color, #000000); text-align: center; margin: 0; padding: 20px; }
-        .container { max-width: 400px; margin: auto; background: var(--tg-theme-secondary-bg-color, #f0f0f0); padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .ticket-display { font-size: 48px; font-weight: bold; color: #0088cc; margin: 20px 0; }
-        .progress { margin-bottom: 20px; font-weight: bold; }
-        button { background-color: #0088cc; color: white; border: none; padding: 15px 30px; border-radius: 10px; font-size: 18px; font-weight: bold; width: 100%; cursor: pointer; transition: opacity 0.3s; }
-        button:disabled { background-color: #aaaaaa; cursor: not-allowed; }
-        .ticket-list { margin-top: 20px; text-align: left; background: white; border-radius: 10px; padding: 10px; max-height: 150px; overflow-y: auto; color: #333; }
-        .ticket-item { border-bottom: 1px solid #eee; padding: 5px 0; font-family: monospace; }
+        body { font-family: sans-serif; text-align: center; background: #1c1c1c; color: white; padding: 20px; }
+        .card { background: #2c2c2c; padding: 30px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        .ticket-count { font-size: 50px; font-weight: bold; color: #0088cc; margin: 10px 0; }
+        button { background: #0088cc; color: white; border: none; padding: 15px; width: 100%; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        button:disabled { background: #555; opacity: 0.6; cursor: not-allowed; }
+        #status-msg { font-size: 12px; color: #aaa; margin-top: 10px; }
+        .list { margin-top: 20px; text-align: left; max-height: 150px; overflow-y: auto; background: #333; padding: 10px; border-radius: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h2>🎟️ Mini Lottery</h2>
-        <div class="progress" id="counter-text">Tickets: 0 / 50</div>
-        <div class="ticket-display" id="main-count">0</div>
+    <div class="card">
+        <h3>🎟️ Lottery Tickets</h3>
+        <div id="ticket-info">Loading your data...</div>
+        <div class="ticket-count" id="count">0</div>
         
-        <button id="claimBtn" onclick="handleClaim()">Claim 1 Ticket (Ad)</button>
+        <button id="claimBtn" disabled onclick="handleClaim()">Initializing Ads...</button>
+        <div id="status-msg">Waiting for ad provider...</div>
 
-        <div class="ticket-list" id="ticket-list">
-            <div style="text-align:center; color: #999;">No tickets yet</div>
+        <div class="list" id="ticket-list">
+            <strong>Your Numbers:</strong>
+            <ul id="numbers" style="list-style: none; padding: 0;"></ul>
         </div>
     </div>
 
     <script>
-        // --- 1. CONFIGURATION ---
+        // 1. Firebase Config (REPLACE WITH YOURS)
         // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyAK315b3-j5RrIvx0vH2OE_mdd86Zbd8Wc",
@@ -57,94 +57,72 @@ const firebaseConfig = {
   appId: "1:1070554867228:web:8f4abf585baa1d82f5e1d9",
   measurementId: "G-7XZ8F2FD5K"
 };
-
-        // --- 2. INITIALIZATION ---
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+
+        // 2. Telegram Setup
         const tg = window.Telegram.WebApp;
-        
-        tg.ready();
         tg.expand();
-
-        // Get User ID from Telegram or fallback for browser testing
         const userId = tg.initDataUnsafe?.user?.id || "dev_user";
-        const userRef = db.ref('lottery_users/' + userId);
+        const userRef = db.ref('users/' + userId);
         
-        let currentTickets = 0;
+        let ticketCount = 0;
 
-        // --- 3. REALTIME DATABASE SYNC ---
+        // 3. Check for Ad Controller Readiness
+        const checkAdsInterval = setInterval(() => {
+            if (window.TelegramAdsController && typeof window.TelegramAdsController.showAd === 'function') {
+                const btn = document.getElementById('claimBtn');
+                if (ticketCount < 50) {
+                    btn.disabled = false;
+                    btn.innerText = "Claim 1 Ticket (Ad)";
+                    document.getElementById('status-msg').innerText = "Ad Provider Connected ✅";
+                }
+                clearInterval(checkAdsInterval); // Stop checking once ready
+            }
+        }, 500);
+
+        // 4. Firebase Sync
         userRef.on('value', (snapshot) => {
             const data = snapshot.val();
-            if (data) {
-                currentTickets = data.count || 0;
-                updateUI(data.tickets || {});
-            }
-        });
-
-        function updateUI(ticketsObj) {
-            document.getElementById('counter-text').innerText = `Tickets: ${currentTickets} / 50`;
-            document.getElementById('main-count').innerText = currentTickets;
+            ticketCount = data?.count || 0;
+            document.getElementById('count').innerText = ticketCount;
+            document.getElementById('ticket-info').innerText = `Progress: ${ticketCount} / 50`;
             
-            const listDiv = document.getElementById('ticket-list');
-            const ticketsArray = Object.values(ticketsObj);
-            
-            if (ticketsArray.length > 0) {
-                listDiv.innerHTML = ticketsArray.map(t => `<div class="ticket-item">🎫 Ticket #${t}</div>`).reverse().join('');
+            const list = document.getElementById('numbers');
+            list.innerHTML = "";
+            if (data?.tickets) {
+                Object.values(data.tickets).forEach(num => {
+                    list.innerHTML += `<li>🎫 #${num}</li>`;
+                });
             }
 
-            if (currentTickets >= 50) {
+            if (ticketCount >= 50) {
                 const btn = document.getElementById('claimBtn');
                 btn.disabled = true;
-                btn.innerText = "Limit Reached (50/50)";
-            }
-        }
-
-        // --- 4. ADS & TICKET GENERATION ---
-        async function handleClaim() {
-    const btn = document.getElementById('claimBtn');
-    
-    if (currentTickets >= 50) return;
-
-    // Show loading state so user knows it's working
-    btn.disabled = true;
-    btn.innerText = "Loading Ad...";
-
-    try {
-        window.TelegramAdsController.showAd({
-            onAdCompleted: () => {
-                addNewTicket();
-                btn.disabled = false;
-                btn.innerText = "Claim 1 Ticket (Ad)";
-            },
-            onAdError: (err) => {
-                console.error("Ad Error:", err);
-                // Important: Reset button if ad fails
-                btn.disabled = false;
-                btn.innerText = "Claim 1 Ticket (Ad)";
-                tg.showAlert("Ad not ready. Please try again in a few seconds.");
+                btn.innerText = "Limit Reached";
             }
         });
-    } catch (e) {
-        btn.disabled = false;
-        btn.innerText = "Claim 1 Ticket (Ad)";
-        alert("Controller Error: " + e.message);
-    }
-}
-        function addNewTicket() {
-            const ticketNumber = Math.floor(100000 + Math.random() * 900000); // Random 6-digit
-            
-            // Atomic update: increment count and push ticket
-            userRef.transaction((currentData) => {
-                if (currentData === null) {
-                    return { count: 1, tickets: { [Date.now()]: ticketNumber } };
+
+        // 5. Improved Claim Logic
+        function handleClaim() {
+            const btn = document.getElementById('claimBtn');
+            btn.disabled = true;
+            btn.innerText = "Opening Ad...";
+
+            window.TelegramAdsController.showAd({
+                onAdCompleted: () => {
+                    const newTicket = Math.floor(100000 + Math.random() * 900000);
+                    userRef.update({ count: ticketCount + 1 });
+                    userRef.child('tickets').push(newTicket);
+                    
+                    btn.disabled = false;
+                    btn.innerText = "Claim 1 Ticket (Ad)";
+                },
+                onAdError: (err) => {
+                    tg.showAlert("Ad failed to load. Please try again.");
+                    btn.disabled = false;
+                    btn.innerText = "Claim 1 Ticket (Ad)";
                 }
-                if (currentData.count >= 50) return; // Prevent over-limit
-                
-                currentData.count = (currentData.count || 0) + 1;
-                if (!currentData.tickets) currentData.tickets = {};
-                currentData.tickets[Date.now()] = ticketNumber;
-                
-                return currentData;
             });
         }
     </script>
