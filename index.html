@@ -2,30 +2,67 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Monetag In-App Test</title>
+<title>Monetag In-App Interstitial Test</title>
 
-<script src='//libtl.com/sdk.js' data-zone='10688536' data-sdk='show_10688536'></script>
+<!-- Monetag SDK -->
+<script src="//libtl.com/sdk.js"
+        data-zone="10688536"
+        data-sdk="show_10688536"></script>
+
+<style>
+body{
+font-family: Arial;
+text-align:center;
+margin-top:80px;
+background:#f5f5f5;
+}
+
+button{
+font-size:20px;
+padding:15px 30px;
+background:#0088cc;
+color:white;
+border:none;
+border-radius:10px;
+cursor:pointer;
+}
+
+button:hover{
+background:#006699;
+}
+</style>
 
 </head>
+
 <body>
 
 <h2>Monetag In-App Interstitial Test</h2>
 
 <button onclick="showAd()">Show Ad</button>
 
+<p id="status"></p>
+
 <script>
+
 function showAd(){
-  show_10688536({
-    type: 'inApp',
-    inAppSettings: {
-      frequency: 2,
-      capping: 0.1,
-      interval: 30,
-      timeout: 5,
-      everyPage: false
-    }
-  });
+
+document.getElementById("status").innerText="Requesting Ad...";
+
+show_10688536({
+  type: 'inApp',
+  inAppSettings: {
+    frequency: 2,
+    capping: 0.1,
+    interval: 30,
+    timeout: 5,
+    everyPage: false
+  }
+});
+
+console.log("Ad request sent");
+
 }
+
 </script>
 
 </body>
