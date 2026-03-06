@@ -100,21 +100,36 @@ const firebaseConfig = {
         }
 
         // --- 4. ADS & TICKET GENERATION ---
-        function handleClaim() {
-            if (currentTickets >= 50) return;
+        async function handleClaim() {
+    const btn = document.getElementById('claimBtn');
+    
+    if (currentTickets >= 50) return;
 
-            // Trigger RichAds
-            window.TelegramAdsController.showAd({
-                onAdCompleted: () => {
-                    addNewTicket();
-                },
-                onAdError: (err) => {
-                    console.error("Ad error:", err);
-                    tg.showAlert("Ad not ready yet. Try again in a moment.");
-                }
-            });
-        }
+    // Show loading state so user knows it's working
+    btn.disabled = true;
+    btn.innerText = "Loading Ad...";
 
+    try {
+        window.TelegramAdsController.showAd({
+            onAdCompleted: () => {
+                addNewTicket();
+                btn.disabled = false;
+                btn.innerText = "Claim 1 Ticket (Ad)";
+            },
+            onAdError: (err) => {
+                console.error("Ad Error:", err);
+                // Important: Reset button if ad fails
+                btn.disabled = false;
+                btn.innerText = "Claim 1 Ticket (Ad)";
+                tg.showAlert("Ad not ready. Please try again in a few seconds.");
+            }
+        });
+    } catch (e) {
+        btn.disabled = false;
+        btn.innerText = "Claim 1 Ticket (Ad)";
+        alert("Controller Error: " + e.message);
+    }
+}
         function addNewTicket() {
             const ticketNumber = Math.floor(100000 + Math.random() * 900000); // Random 6-digit
             
