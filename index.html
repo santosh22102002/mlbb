@@ -2,23 +2,119 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Monetag Rewarded Test</title>
-
-<script src='//libtl.com/sdk.js' data-zone='10688536' data-sdk='show_10688536'></script>
-
+<title>Telegram Reward Ad</title>
 </head>
-<body>
 
-<button onclick="watchAd()">Watch Ad</button>
+<body style="font-family:sans-serif;text-align:center;margin-top:60px">
+
+<h2>Watch Ad → Get Ticket</h2>
+
+<button id="adBtn" onclick="watchAd()" disabled>
+Loading Ads...
+</button>
+
+<p id="status"></p>
+
+<!-- Telegram WebApp -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<!-- RichAds SDK -->
+<script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
 
 <script>
-function watchAd() {
-  show_10688536().then(() => {
-    alert("Ad watched successfully!");
-  }).catch(() => {
-    alert("Ad not completed or blocked.");
-  });
+
+// Tell Telegram app is ready
+Telegram.WebApp.ready();
+Telegram.WebApp.expand();
+
+let adReady = false;
+let adRunning = false;
+
+// Initialize RichAds
+window.TelegramAdsController = new TelegramAdsController();
+
+window.TelegramAdsController.initialize({
+  pubId: "1004311",
+  appId: "6445",
+
+  onInit: function () {
+
+    adReady = true;
+
+    document.getElementById("adBtn").disabled = false;
+    document.getElementById("adBtn").innerText = "Watch Ad";
+
+    console.log("Ads Ready");
+
+  },
+
+  onError: function () {
+
+    document.getElementById("status").innerText =
+    "Ad system failed to load";
+
+  }
+
+});
+
+// Watch Ad button
+function watchAd(){
+
+if(!adReady){
+  document.getElementById("status").innerText =
+  "Ads still loading...";
+  return;
 }
+
+if(adRunning){
+  return;
+}
+
+adRunning = true;
+
+document.getElementById("status").innerText =
+"Loading ad...";
+
+window.TelegramAdsController.showAd({
+
+  onClose: function(){
+
+    adRunning = false;
+
+    document.getElementById("status").innerText =
+    "Ad finished";
+
+    giveReward();
+
+  },
+
+  onError: function(){
+
+    adRunning = false;
+
+    document.getElementById("status").innerText =
+    "Ad not available. Try again.";
+
+  }
+
+});
+
+}
+
+// Reward function
+function giveReward(){
+
+let tickets =
+Number(localStorage.getItem("tickets") || 0);
+
+tickets++;
+
+localStorage.setItem("tickets", tickets);
+
+alert("You earned 1 ticket!");
+
+}
+
 </script>
 
 </body>
