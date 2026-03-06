@@ -6,8 +6,6 @@
 </head>
 <body>
 
-<h2>RichAds Telegram Playable Ads Test</h2>
-
 <button onclick="showAd()">Watch Ad</button>
 
 <script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
@@ -15,15 +13,13 @@
 <script>
 window.TelegramAdsController = new TelegramAdsController();
 
-TelegramAdsController.initialize({
+window.TelegramAdsController.initialize({
   pubId: "1004311",
-  appId: "6445",
+  appId: "6445"
 });
 
 function showAd(){
-  TelegramAdsController.showAd({
-    blockId: 1
-  });
+  window.TelegramAdsController.showAd();
 }
 </script>
 
