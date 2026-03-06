@@ -2,77 +2,23 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Telegram Reward Ad</title>
+<title>Monetag Rewarded Test</title>
+
+<script src='//libtl.com/sdk.js' data-zone='10688536' data-sdk='show_10688536'></script>
+
 </head>
 <body>
 
-<button id="adBtn" onclick="watchAd()">Loading Ads...</button>
-<p id="status"></p>
-
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
+<button onclick="watchAd()">Watch Ad</button>
 
 <script>
-
-let adReady = false;
-let adRunning = false;
-
-window.TelegramAdsController = new TelegramAdsController();
-
-window.TelegramAdsController.initialize({
-  pubId: "1004311",
-  appId: "6445",
-
-  onInit: function(){
-    adReady = true;
-    document.getElementById("adBtn").innerText = "Watch Ad";
-  },
-
-  onError: function(){
-    document.getElementById("status").innerText = "Ad system error";
-  }
-
-});
-
-function watchAd(){
-
-if(!adReady){
-  document.getElementById("status").innerText="Ads still loading...";
-  return;
+function watchAd() {
+  show_10688536().then(() => {
+    alert("Ad watched successfully!");
+  }).catch(() => {
+    alert("Ad not completed or blocked.");
+  });
 }
-
-if(adRunning){
-  return;
-}
-
-adRunning = true;
-document.getElementById("status").innerText="Loading ad...";
-
-window.TelegramAdsController.showAd({
-
-  onClose: function(){
-    adRunning = false;
-    document.getElementById("status").innerText="Ad finished";
-
-    giveReward();
-  },
-
-  onError: function(){
-    adRunning = false;
-    document.getElementById("status").innerText="Ad not available, try again";
-  }
-
-});
-
-}
-
-function giveReward(){
-
-// Example reward
-alert("Ticket earned!");
-
-}
-
 </script>
 
 </body>
