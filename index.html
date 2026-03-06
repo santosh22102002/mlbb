@@ -1,33 +1,64 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>AdsGram Test</title>
-<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monetag Fix</title>
+    
+    <script src="https://alwingulla.com/88/p.js" data-zone="10688536" data-sdk="show_10688536"></script>
+
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: #eee; }
+        #status { padding: 15px; margin: 20px; border-radius: 8px; background: white; border: 1px solid #ccc; }
+        button { padding: 10px 20px; cursor: pointer; background: #0088cc; color: white; border: none; border-radius: 5px; }
+    </style>
 </head>
+<body>
 
-<body style="text-align:center;margin-top:50px;font-family:sans-serif">
+    <h2>Monetag Ad Tester</h2>
+    <div id="status">Checking SDK status...</div>
+    <button onclick="checkAndShow()">Manual Trigger</button>
 
-<h2>AdsGram Rewarded Ads Test</h2>
+    <script>
+        const statusDiv = document.getElementById('status');
 
-<button onclick="showAd()" style="padding:15px 30px;font-size:18px">
-Watch Ad
-</button>
+        // Function to safely initialize ads
+        function initAds() {
+            // Check if the SDK function exists yet
+            if (typeof show_10688536 === 'function') {
+                statusDiv.innerText = "SDK Found! Starting In-App logic...";
+                
+                show_10688536({
+                    type: 'inApp',
+                    inAppSettings: {
+                        frequency: 2,
+                        capping: 0.1,
+                        interval: 30,
+                        timeout: 5,
+                        everyPage: true // Set to true for easier testing/refreshing
+                    }
+                });
+            } else {
+                statusDiv.innerText = "SDK not ready yet. Retrying in 1s...";
+                setTimeout(initAds, 1000); // Retry after 1 second
+            }
+        }
 
-<script>
-const AdController = window.Adsgram.init({
-  blockId: 24441",
-  debug: true
-});
+        // Start the check loop
+        initAds();
 
-function showAd(){
-  AdController.show().then(() => {
-    alert("User watched the ad. Reward them!");
-  }).catch((error) => {
-    alert("Ad error: " + error);
-  });
-}
-</script>
-
+        // Manual button logic
+        function checkAndShow() {
+            if (typeof show_10688536 === 'function') {
+                show_10688536().then(() => {
+                    statusDiv.innerText = "Ad shown successfully!";
+                }).catch(e => {
+                    statusDiv.innerText = "SDK loaded, but no ad available (No Fill).";
+                });
+            } else {
+                alert("SDK script is still not loaded. Check your internet or AdBlocker.");
+            }
+        }
+    </script>
 </body>
 </html>
