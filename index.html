@@ -4,25 +4,35 @@
 <meta charset="UTF-8">
 <title>Monetag Test</title>
 
-<script src='//libtl.com/sdk.js' data-zone='10688536' data-sdk='show_10688536'></script>
+<script src="https://libtl.com/sdk.js" data-zone="10688536" data-sdk="show_10688536"></script>
 
 </head>
-<body style="text-align:center; margin-top:100px;">
+
+<body style="text-align:center;margin-top:100px;">
 
 <h2>Monetag Rewarded Ads Test</h2>
 
 <button onclick="watchAd()">Watch Ad</button>
 
 <script>
-function watchAd() {
 
-    show_10688536().then(() => {
-        alert("Ad watched successfully!");
-    }).catch(() => {
-        alert("Ad failed or skipped");
-    });
+function watchAd(){
+
+if(typeof show_10688536 !== "function"){
+alert("Monetag SDK not loaded");
+return;
+}
+
+show_10688536()
+.then(()=>{
+alert("Ad watched successfully");
+})
+.catch(()=>{
+alert("Ad failed or skipped");
+});
 
 }
+
 </script>
 
 </body>
