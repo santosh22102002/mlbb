@@ -1,130 +1,31 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mini Lottery</title>
-    
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-    <script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
-    <script>
-        window.TelegramAdsController = new TelegramAdsController();
-        window.TelegramAdsController.initialize({
-            pubId: "1004311",
-            appId: "6445",
-        });
-    </script>
-
-    <style>
-        body { font-family: sans-serif; text-align: center; background: #1c1c1c; color: white; padding: 20px; }
-        .card { background: #2c2c2c; padding: 30px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
-        .ticket-count { font-size: 50px; font-weight: bold; color: #0088cc; margin: 10px 0; }
-        button { background: #0088cc; color: white; border: none; padding: 15px; width: 100%; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; }
-        button:disabled { background: #555; opacity: 0.6; cursor: not-allowed; }
-        #status-msg { font-size: 12px; color: #aaa; margin-top: 10px; }
-        .list { margin-top: 20px; text-align: left; max-height: 150px; overflow-y: auto; background: #333; padding: 10px; border-radius: 10px; }
-    </style>
+<meta charset="UTF-8">
+<title>RichAds Telegram Test</title>
 </head>
 <body>
 
-    <div class="card">
-        <h3>🎟️ Lottery Tickets</h3>
-        <div id="ticket-info">Loading your data...</div>
-        <div class="ticket-count" id="count">0</div>
-        
-        <button id="claimBtn" disabled onclick="handleClaim()">Initializing Ads...</button>
-        <div id="status-msg">Waiting for ad provider...</div>
+<h2>RichAds Telegram Playable Ads Test</h2>
 
-        <div class="list" id="ticket-list">
-            <strong>Your Numbers:</strong>
-            <ul id="numbers" style="list-style: none; padding: 0;"></ul>
-        </div>
-    </div>
+<button onclick="showAd()">Watch Ad</button>
 
-    <script>
-        // 1. Firebase Config (REPLACE WITH YOURS)
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyAK315b3-j5RrIvx0vH2OE_mdd86Zbd8Wc",
-  authDomain: "test-6f668.firebaseapp.com",
-  databaseURL: "https://test-6f668-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "test-6f668",
-  storageBucket: "test-6f668.firebasestorage.app",
-  messagingSenderId: "1070554867228",
-  appId: "1:1070554867228:web:8f4abf585baa1d82f5e1d9",
-  measurementId: "G-7XZ8F2FD5K"
-};
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+<script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
 
-        // 2. Telegram Setup
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        const userId = tg.initDataUnsafe?.user?.id || "dev_user";
-        const userRef = db.ref('users/' + userId);
-        
-        let ticketCount = 0;
+<script>
+window.TelegramAdsController = new TelegramAdsController();
 
-        // 3. Check for Ad Controller Readiness
-        const checkAdsInterval = setInterval(() => {
-            if (window.TelegramAdsController && typeof window.TelegramAdsController.showAd === 'function') {
-                const btn = document.getElementById('claimBtn');
-                if (ticketCount < 50) {
-                    btn.disabled = false;
-                    btn.innerText = "Claim 1 Ticket (Ad)";
-                    document.getElementById('status-msg').innerText = "Ad Provider Connected ✅";
-                }
-                clearInterval(checkAdsInterval); // Stop checking once ready
-            }
-        }, 500);
+TelegramAdsController.initialize({
+  pubId: "1004311",
+  appId: "6445",
+});
 
-        // 4. Firebase Sync
-        userRef.on('value', (snapshot) => {
-            const data = snapshot.val();
-            ticketCount = data?.count || 0;
-            document.getElementById('count').innerText = ticketCount;
-            document.getElementById('ticket-info').innerText = `Progress: ${ticketCount} / 50`;
-            
-            const list = document.getElementById('numbers');
-            list.innerHTML = "";
-            if (data?.tickets) {
-                Object.values(data.tickets).forEach(num => {
-                    list.innerHTML += `<li>🎫 #${num}</li>`;
-                });
-            }
+function showAd(){
+  TelegramAdsController.showAd({
+    blockId: 1
+  });
+}
+</script>
 
-            if (ticketCount >= 50) {
-                const btn = document.getElementById('claimBtn');
-                btn.disabled = true;
-                btn.innerText = "Limit Reached";
-            }
-        });
-
-        // 5. Improved Claim Logic
-        function handleClaim() {
-            const btn = document.getElementById('claimBtn');
-            btn.disabled = true;
-            btn.innerText = "Opening Ad...";
-
-            window.TelegramAdsController.showAd({
-                onAdCompleted: () => {
-                    const newTicket = Math.floor(100000 + Math.random() * 900000);
-                    userRef.update({ count: ticketCount + 1 });
-                    userRef.child('tickets').push(newTicket);
-                    
-                    btn.disabled = false;
-                    btn.innerText = "Claim 1 Ticket (Ad)";
-                },
-                onAdError: (err) => {
-                    tg.showAlert("Ad failed to load. Please try again.");
-                    btn.disabled = false;
-                    btn.innerText = "Claim 1 Ticket (Ad)";
-                }
-            });
-        }
-    </script>
 </body>
 </html>
