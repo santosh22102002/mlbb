@@ -109,54 +109,58 @@ const firebaseConfig = {
     const secs = nowIST.getSeconds();
 
     const btn = document.getElementById('claim-btn');
+    const statusEl = document.getElementById('lottery-status');
+    const winnerEl = document.getElementById('winner-display');
+    
     let status = "";
     let isOpen = false;
 
-    // --- UPDATED TIME LOGIC ---
     if (hrs >= 5 && hrs < 12) {
-        // 5:00 AM to 11:59 AM -> Open for claims
-        status = `Closing in: ${11-hrs}h ${59-mins}m ${59-secs}s`;
+        // MORNING: 5:00 AM - 11:59 AM
+        status = `Lottery Ends in: ${11-hrs}h ${59-mins}m ${59-secs}s`;
         isOpen = true;
-    } else if (hrs >= 12 && hrs < 13) {
-        // 12:00 PM to 12:59 PM -> Calculating results
+    } 
+    else if (hrs >= 12 && hrs < 13) {
+        // NOON: 12:00 PM - 12:59 PM
         status = `Draw result at 1:00 PM`;
         isOpen = false;
-    } else if (hrs >= 13 && hrs < 17) {
-        // 1:00 PM to 4:59 PM -> Winner is visible
-        status = "Draw Finished";
+        winnerEl.innerText = "Processing Draw...";
+    } 
+    else if (hrs >= 13 && hrs < 17) {
+        // AFTERNOON: 1:00 PM - 4:59 PM
+        status = "Today's Draw Finished";
         isOpen = false;
-        fetchWinner();
-    } else {
-        // 5:00 PM to 4:59 AM (Next Day) -> Reset and wait
-        status = "Next Lottery: Tomorrow 5:00 AM";
+        fetchWinner(); // Show the winner picked at 1 PM
+    } 
+    else {
+        // EVENING/NIGHT: 5:00 PM - 4:59 AM (Current Time)
+        status = "Next Lottery starts Tomorrow at 5:00 AM";
         isOpen = false;
-        document.getElementById('winner-display').innerText = ""; // Clear the old winner
+        winnerEl.innerText = ""; // Clear the winner after 5 PM reset
     }
-    // ---------------------------
 
-    document.getElementById('lottery-status').innerText = status;
-    
-    // Cooldown and button logic remains the same...
+    statusEl.innerText = status;
+
+    // --- Button & Cooldown Logic ---
     const nextClaim = userData.lastClaim + (10 * 60000);
-    const cooldown = nextClaim - Date.now();
+    const cooldownMs = nextClaim - Date.now();
 
     if (!isOpen) {
         btn.disabled = true;
-        btn.innerText = "LOTTERY CLOSED";
+        btn.innerText = (hrs >= 17 || hrs < 5) ? "COMING SOON" : "LOTTERY CLOSED";
     } else if (userData.tickets.length >= 50) {
         btn.disabled = true;
-        btn.innerText = "LIMIT REACHED (50/50)";
-    } else if (cooldown > 0) {
+        btn.innerText = "MAX TICKETS REACHED (50)";
+    } else if (cooldownMs > 0) {
         btn.disabled = true;
-        const m = Math.floor(cooldown / 60000);
-        const s = Math.floor((cooldown % 60000) / 1000);
-        btn.innerText = `COOLDOWN: ${m}m ${s}s`;
+        const m = Math.floor(cooldownMs / 60000);
+        const s = Math.floor((cooldownMs % 60000) / 1000);
+        btn.innerText = `NEXT TICKET: ${m}m ${s}s`;
     } else {
         btn.disabled = false;
-        btn.innerText = "WATCH AD FOR TICKET";
+        btn.innerText = "CLAIM TICKET (WATCH AD)";
     }
 }
-
     async function handleClaim() {
         const AdController = window.Adsgram.init({ blockId: 24441 });
         try {
