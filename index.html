@@ -5,12 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mini Lottery</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database-compat.js"></script>
+    
     <script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-        import { getFirestore, doc, getDoc, updateDoc, arrayUnion, setDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+    <script>
+        window.TelegramAdsController = new TelegramAdsController();
+        window.TelegramAdsController.initialize({
+            pubId: "1004311",
+            appId: "6445",
+        });
+    </script>
 
-        // TODO: Replace with your Firebase Project Config
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f4f4f9; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 15px; shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .ticket-count { font-size: 24px; font-weight: bold; color: #0088cc; }
+        button { background: #0088cc; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; cursor: pointer; margin-top: 15px; }
+        button:disabled { background: #ccc; }
+        #ticket-list { margin-top: 20px; text-align: left; max-height: 200px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Lottery Tickets</h2>
+        <div class="ticket-count" id="count">0 / 50</div>
+        <p>Watch an ad to claim a ticket!</p>
+        <button id="claimBtn" onclick="showAd()">Claim Ticket</button>
+        
+        <div id="ticket-list">
+            <strong>Your Numbers:</strong>
+            <ul id="numbers"></ul>
+        </div>
+    </div>
+
+    <script>
+        // 1. Firebase Configuration (Replace with your actual config)
         // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyAK315b3-j5RrIvx0vH2OE_mdd86Zbd8Wc",
@@ -22,77 +53,71 @@ const firebaseConfig = {
   appId: "1:1070554867228:web:8f4abf585baa1d82f5e1d9",
   measurementId: "G-7XZ8F2FD5K"
 };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        // 2. Telegram User Data
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        const userId = tg.initDataUnsafe?.user?.id || "test_user";
 
-        // Initialize RichAds
-        window.TelegramAdsController = new TelegramAdsController();
-        window.TelegramAdsController.initialize({
-            pubId: "1004311",
-            appId: "6445",
+        let ticketCount = 0;
+
+        // 3. Sync with Firebase
+        const userRef = db.ref('users/' + userId);
+        userRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                ticketCount = data.count || 0;
+                document.getElementById('count').innerText = `${ticketCount} / 50`;
+                updateUI(data.tickets);
+                
+                if (ticketCount >= 50) {
+                    document.getElementById('claimBtn').disabled = true;
+                    document.getElementById('claimBtn').innerText = "Limit Reached";
+                }
+            }
         });
 
-        const tg = window.Telegram.WebApp;
-        const userId = tg.initDataUnsafe.user?.id || "guest_user";
+        // 4. Show Ad and Generate Ticket
+        function showAd() {
+            if (ticketCount >= 50) return;
 
-        async function claimTicket() {
-            const userRef = doc(db, "users", userId.toString());
-            const userSnap = await getDoc(userRef);
-            const currentCount = userSnap.exists() ? userSnap.data().count : 0;
-
-            if (currentCount >= 50) {
-                alert("You've reached the limit of 50 tickets!");
-                return;
-            }
-
-            // Trigger the Ad
+            // Trigger RichAds
             window.TelegramAdsController.showAd({
-                onCompleted: () => {
-                    generateTicket(userRef, currentCount);
+                onAdCompleted: () => {
+                    generateTicket();
                 },
-                onSkipped: () => {
-                    alert("You must watch the full ad to get a ticket.");
-                },
-                onError: (err) => {
-                    console.error("Ad Error:", err);
+                onAdError: (err) => {
+                    console.error("Ad failed", err);
+                    alert("Failed to load ad. Please try again.");
                 }
             });
         }
 
-        async function generateTicket(userRef, currentCount) {
-            const ticketNumber = "#" + Math.floor(1000 + Math.random() * 9000);
-            
-            try {
-                await setDoc(userRef, {
-                    tickets: arrayUnion(ticketNumber),
-                    count: currentCount + 1
-                }, { merge: true });
+        function generateTicket() {
+            const newTicket = Math.floor(100000 + Math.random() * 900000); // 6-digit number
+            const newCount = ticketCount + 1;
 
-                document.getElementById('ticket-display').innerText = `New Ticket: ${ticketNumber}`;
-                document.getElementById('count').innerText = currentCount + 1;
-            } catch (e) {
-                console.error("Error adding ticket: ", e);
-            }
+            userRef.update({
+                count: newCount,
+            });
+            
+            // Push new ticket number to list
+            userRef.child('tickets').push(newTicket);
         }
 
-        window.claimTicket = claimTicket;
+        function updateUI(tickets) {
+            const list = document.getElementById('numbers');
+            list.innerHTML = "";
+            if (tickets) {
+                Object.values(tickets).forEach(num => {
+                    const li = document.createElement('li');
+                    li.innerText = `Ticket: #${num}`;
+                    list.appendChild(li);
+                });
+            }
+        }
     </script>
-
-    <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f4f4; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        button { background: #0088cc; color: white; border: none; padding: 15px 30px; border-radius: 8px; font-size: 16px; cursor: pointer; }
-        .count-text { margin-top: 10px; color: #666; }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <h2>Mini Lottery</h2>
-        <p>Watch an ad to get a ticket (Max 50)</p>
-        <h3 id="ticket-display">No tickets yet</h3>
-        <button onclick="claimTicket()">📺 Watch Ad & Claim</button>
-        <p class="count-text">Tickets: <span id="count">0</span>/50</p>
-    </div>
 </body>
 </html>
