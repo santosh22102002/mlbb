@@ -2,54 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>1UP LOTTO</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Lottery</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <script src="https://adsgram.ai/sdk.js"></script>
-    <style>
-        :root { --bg: #0f0f1b; --card: #1a1a2e; --accent: #ffcc00; --text: #ffffff; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; overflow-x: hidden; }
-        #loading-screen { position: fixed; inset: 0; background: var(--bg); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .user-info { font-size: 14px; opacity: 0.7; margin-bottom: 15px; }
-        .title { font-size: 24px; font-weight: 800; color: var(--accent); text-align: left; }
-        .timer { font-size: 18px; margin: 5px 0; text-align: left; font-family: monospace; }
-        .prize { font-size: 20px; font-weight: bold; color: #00ff88; text-align: left; margin-bottom: 5px; }
-        .winner { font-size: 18px; font-weight: bold; color: #ff4757; text-align: left; min-height: 24px; margin-bottom: 25px; }
-        .ticket-title { font-size: 16px; margin-bottom: 10px; opacity: 0.8; }
-        .ticket-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; width: 100%; margin-bottom: 20px; }
-        .ticket-cell { background: var(--card); padding: 10px 2px; text-align: center; font-size: 11px; border-radius: 4px; color: #aaa; }
-        .has-ticket { color: var(--accent); font-weight: bold; }
-        #claim-btn { width: 100%; padding: 16px; border: none; border-radius: 8px; background: var(--accent); color: #000; font-size: 16px; font-weight: bold; cursor: pointer; }
-        #claim-btn:disabled { background: #444; color: #888; cursor: not-allowed; }
-        .hidden { display: none !important; }
-    </style>
-</head>
-<body>
+    <script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, updateDoc, arrayUnion, setDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
 
-<div id="loading-screen">
-    <div>LOADING LOTTERY...</div>
-    <div style="font-size: 10px; margin-top: 10px; opacity: 0.5;">Verifying IST Session</div>
-</div>
-
-<div class="user-info" id="user-tag">@username</div>
-<div class="title">1UP LOTTO</div>
-<div id="lottery-status" class="timer">Connecting...</div>
-<div class="prize">Win 500</div>
-<div id="winner-display" class="winner"></div>
-
-<div style="height: 30px;"></div>
-
-<div class="ticket-title">YOUR TICKET NUMBERS</div>
-<div id="ticket-container" class="ticket-grid"></div>
-
-<button id="claim-btn" onclick="handleClaim()">CLAIM TICKET (AD)</button>
-
-<script>
-    // --- CONFIG ---
-    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        // TODO: Replace with your Firebase Project Config
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyAK315b3-j5RrIvx0vH2OE_mdd86Zbd8Wc",
   authDomain: "test-6f668.firebaseapp.com",
@@ -60,131 +22,77 @@ const firebaseConfig = {
   appId: "1:1070554867228:web:8f4abf585baa1d82f5e1d9",
   measurementId: "G-7XZ8F2FD5K"
 };
-    const ADS_BLOCK_ID = "24441";
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const auth = firebase.auth();
-    const tg = window.Telegram.WebApp;
-    tg.expand();
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-    const tgUser = tg.initDataUnsafe?.user || { id: "test_dev", username: "LocalUser" };
-    document.getElementById('user-tag').innerText = `@${tgUser.username}`;
+        // Initialize RichAds
+        window.TelegramAdsController = new TelegramAdsController();
+        window.TelegramAdsController.initialize({
+            pubId: "1004311",
+            appId: "6445",
+        });
 
-    let userData = { tickets: [], lastClaim: 0 };
+        const tg = window.Telegram.WebApp;
+        const userId = tg.initDataUnsafe.user?.id || "guest_user";
 
-    function getIST() {
-        const d = new Date();
-        return new Date(d.getTime() + (d.getTimezoneOffset() * 60000) + (5.5 * 3600000));
-    }
+        async function claimTicket() {
+            const userRef = doc(db, "users", userId.toString());
+            const userSnap = await getDoc(userRef);
+            const currentCount = userSnap.exists() ? userSnap.data().count : 0;
 
-    async function init() {
-        try {
-            await auth.signInAnonymously();
-            const snap = await db.ref('users/' + auth.currentUser.uid).get();
-            if (snap.exists()) userData = snap.val();
-            if (!userData.tickets) userData.tickets = [];
-            renderTickets();
-            document.getElementById('loading-screen').classList.add('hidden');
-            setInterval(updateApp, 1000);
-        } catch (e) { alert("Auth Error: " + e.message); }
-    }
-
-    function renderTickets() {
-        const container = document.getElementById('ticket-container');
-        container.innerHTML = '';
-        for (let i = 0; i < 50; i++) {
-            const t = userData.tickets[i] || "------";
-            const div = document.createElement('div');
-            div.className = 'ticket-cell' + (userData.tickets[i] ? ' has-ticket' : '');
-            div.innerText = t;
-            container.appendChild(div);
-        }
-    }
-
-    function updateApp() {
-    const nowIST = getIST();
-    const hrs = nowIST.getHours();
-    const mins = nowIST.getMinutes();
-    const secs = nowIST.getSeconds();
-
-    const btn = document.getElementById('claim-btn');
-    const statusEl = document.getElementById('lottery-status');
-    const winnerEl = document.getElementById('winner-display');
-    
-    let status = "";
-    let isOpen = false;
-
-    if (hrs >= 5 && hrs < 12) {
-        // MORNING: 5:00 AM - 11:59 AM
-        status = `Lottery Ends in: ${11-hrs}h ${59-mins}m ${59-secs}s`;
-        isOpen = true;
-    } 
-    else if (hrs >= 12 && hrs < 13) {
-        // NOON: 12:00 PM - 12:59 PM
-        status = `Draw result at 1:00 PM`;
-        isOpen = false;
-        winnerEl.innerText = "Processing Draw...";
-    } 
-    else if (hrs >= 13 && hrs < 17) {
-        // AFTERNOON: 1:00 PM - 4:59 PM
-        status = "Today's Draw Finished";
-        isOpen = false;
-        fetchWinner(); // Show the winner picked at 1 PM
-    } 
-    else {
-        // EVENING/NIGHT: 5:00 PM - 4:59 AM (Current Time)
-        status = "Next Lottery starts Tomorrow at 5:00 AM";
-        isOpen = false;
-        winnerEl.innerText = ""; // Clear the winner after 5 PM reset
-    }
-
-    statusEl.innerText = status;
-
-    // --- Button & Cooldown Logic ---
-    const nextClaim = userData.lastClaim + (10 * 60000);
-    const cooldownMs = nextClaim - Date.now();
-
-    if (!isOpen) {
-        btn.disabled = true;
-        btn.innerText = (hrs >= 17 || hrs < 5) ? "COMING SOON" : "LOTTERY CLOSED";
-    } else if (userData.tickets.length >= 50) {
-        btn.disabled = true;
-        btn.innerText = "MAX TICKETS REACHED (50)";
-    } else if (cooldownMs > 0) {
-        btn.disabled = true;
-        const m = Math.floor(cooldownMs / 60000);
-        const s = Math.floor((cooldownMs % 60000) / 1000);
-        btn.innerText = `NEXT TICKET: ${m}m ${s}s`;
-    } else {
-        btn.disabled = false;
-        btn.innerText = "CLAIM TICKET (WATCH AD)";
-    }
-}
-    async function handleClaim() {
-        const AdController = window.Adsgram.init({ blockId: 24441 });
-        try {
-            const result = await AdController.show();
-            if (result.done) {
-                const ticket = Math.floor(100000 + Math.random() * 900000);
-                userData.tickets.push(ticket);
-                userData.lastClaim = Date.now();
-                await db.ref('users/' + auth.currentUser.uid).set(userData);
-                renderTickets();
-                tg.HapticFeedback.notificationOccurred('success');
+            if (currentCount >= 50) {
+                alert("You've reached the limit of 50 tickets!");
+                return;
             }
-        } catch (e) { tg.showAlert("Ad Error or Skipped"); }
-    }
 
-    async function fetchWinner() {
-        const snap = await db.ref('current_winner').get();
-        if (snap.exists()) {
-            const val = snap.val();
-            document.getElementById('winner-display').innerText = isNaN(val) ? val : "Winner: #" + val;
+            // Trigger the Ad
+            window.TelegramAdsController.showAd({
+                onCompleted: () => {
+                    generateTicket(userRef, currentCount);
+                },
+                onSkipped: () => {
+                    alert("You must watch the full ad to get a ticket.");
+                },
+                onError: (err) => {
+                    console.error("Ad Error:", err);
+                }
+            });
         }
-    }
 
-    init();
-</script>
+        async function generateTicket(userRef, currentCount) {
+            const ticketNumber = "#" + Math.floor(1000 + Math.random() * 9000);
+            
+            try {
+                await setDoc(userRef, {
+                    tickets: arrayUnion(ticketNumber),
+                    count: currentCount + 1
+                }, { merge: true });
+
+                document.getElementById('ticket-display').innerText = `New Ticket: ${ticketNumber}`;
+                document.getElementById('count').innerText = currentCount + 1;
+            } catch (e) {
+                console.error("Error adding ticket: ", e);
+            }
+        }
+
+        window.claimTicket = claimTicket;
+    </script>
+
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: #f4f4f4; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        button { background: #0088cc; color: white; border: none; padding: 15px 30px; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        .count-text { margin-top: 10px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Mini Lottery</h2>
+        <p>Watch an ad to get a ticket (Max 50)</p>
+        <h3 id="ticket-display">No tickets yet</h3>
+        <button onclick="claimTicket()">📺 Watch Ad & Claim</button>
+        <p class="count-text">Tickets: <span id="count">0</span>/50</p>
+    </div>
 </body>
 </html>
