@@ -2,252 +2,218 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Lottery Ticket</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700;900&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Daily Lottery TMA</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://sad.adsgram.ai/js/adsgram-adbox.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
     <style>
         :root {
-            --bg-paper: #f9f7f2;
-            --accent-blue: #248bed;
-            --text-main: #333333;
+            --bg: #0f0c29;
+            --gold: #fcc200;
+            --white: #ffffff;
+            --glass: rgba(255, 255, 255, 0.1);
         }
 
         body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #e0e0e0;
-            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(to bottom, #0f0c29, #302b63, #24243e);
+            color: var(--white);
             margin: 0;
             padding: 20px;
-            text-transform: uppercase;
-            overflow: hidden; /* Prevent scroll during loading */
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* --- LOADING OVERLAY --- */
+        /* Loading Overlay */
         #loader {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: #ffffff;
+            background: var(--bg);
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 9999;
-            transition: opacity 0.5s ease;
+            transition: opacity 0.5s;
         }
 
-        .load-text { font-weight: 900; font-size: 20px; color: var(--accent-blue); margin-bottom: 10px; }
-        .percent { font-size: 48px; font-weight: 900; color: #333; }
+        /* UI Structure */
+        .left-align { text-align: left; margin-bottom: 20px; }
         
-        .progress-bar-wrap {
-            width: 70%; height: 10px; background: #eee;
-            margin-top: 20px; border-radius: 5px; overflow: hidden;
-        }
-        #progress-fill { width: 0%; height: 100%; background: var(--accent-blue); transition: width 0.2s; }
-
-        /* --- TICKET UI --- */
-        .ticket {
-            background: var(--bg-paper);
-            padding: 25px;
-            border-radius: 4px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            position: relative;
-            min-height: 80vh;
-            visibility: hidden; /* Hidden until loaded */
-        }
-
-        h1 { font-weight: 900; font-size: 26px; margin: 0; color: var(--accent-blue); letter-spacing: 1px; }
-        .timer { font-size: 13px; margin: 10px 0; font-weight: 700; opacity: 0.7; }
-        .prize { font-size: 28px; font-weight: 900; margin: 15px 0; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        h1 { font-size: 26px; margin: 0; color: var(--gold); }
+        .timer-label { font-size: 14px; opacity: 0.7; margin-top: 10px; }
+        .timer-val { font-size: 20px; font-weight: bold; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        td { padding: 15px 5px; text-align: center; font-size: 20px; font-weight: 900; border: none; letter-spacing: 2px; }
+        .prize-box { margin-top: 15px; }
+        .prize-amt { font-size: 24px; font-weight: 800; color: #00ff88; }
 
-        .action-zone { margin-top: 40px; border-top: 2px dashed #ccc; padding-top: 30px; text-align: center; }
-        
-        button {
-            width: 100%; padding: 18px; background-color: var(--accent-blue); color: white;
-            border: none; font-family: 'Roboto', sans-serif; font-weight: 900; font-size: 18px;
-            text-transform: uppercase; box-shadow: 0 4px 0px #1a66ad;
+        .winner-box { margin-top: 15px; padding: 10px 0; min-height: 50px; }
+        .winner-num { font-size: 28px; font-weight: bold; color: var(--gold); letter-spacing: 2px; }
+
+        .spacer { height: 30px; }
+
+        .ticket-section-title { font-size: 18px; margin-bottom: 15px; opacity: 0.9; }
+
+        /* Ticket Table (No borders) */
+        .ticket-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
         }
-        button:disabled { background-color: #bbb; box-shadow: none; opacity: 0.6; }
-        .status-msg { margin-top: 10px; font-size: 12px; font-weight: 700; color: #888; }
+
+        .ticket-slot {
+            background: var(--glass);
+            padding: 10px 2px;
+            border-radius: 8px;
+            font-size: 10px;
+            text-align: center;
+            color: #ddd;
+        }
+
+        .ticket-slot.active {
+            background: rgba(252, 194, 0, 0.2);
+            color: var(--gold);
+            font-weight: bold;
+        }
+
+        /* Claim Button */
+        #claim-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 5%;
+            width: 90%;
+            padding: 18px;
+            border: none;
+            border-radius: 15px;
+            background: linear-gradient(45deg, #FF512F, #DD2476);
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            cursor: pointer;
+        }
+
+        #claim-btn:disabled {
+            background: #444;
+            opacity: 0.6;
+        }
+
+        #cooldown-ui {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--gold);
+        }
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <div class="load-text">1UP LOTTO</div>
-        <div id="percentText" class="percent">0%</div>
-        <div class="progress-bar-wrap">
-            <div id="progress-fill"></div>
-        </div>
-    </div>
+    <div id="loader">Syncing Lottery Data...</div>
 
-    <div id="mainContent" class="ticket">
-        <h1>DAILY LOTTERY</h1>
-        <div id="lotteryTimer" class="timer">LOADING STATUS...</div>
-        <div class="prize">PRIZE: 1,000 USDT</div>
-
-        <div style="margin-top: 30px; font-size: 16px; font-weight: 900;">YOUR TICKETS (<span id="count">0</span>/50)</div>
-        <table id="ticketTable"></table>
-
-        <div class="action-zone">
-            <button id="claimBtn" disabled>PLEASE WAIT</button>
-            <div id="cooldownLabel" class="status-msg">CHECKING COOLDOWN...</div>
-        </div>
-    </div>
-
-    <script>
-        const firebaseConfig = {
-  apiKey: "AIzaSyA3-qDlnHoG2YlleWGfZy6wNBWkkNJ54x8",
-  authDomain: "upwebapp-19b3a.firebaseapp.com",
-  databaseURL: "https://upwebapp-19b3a-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "upwebapp-19b3a",
-  storageBucket: "upwebapp-19b3a.firebasestorage.app",
-  messagingSenderId: "746730266775",
-  appId: "1:746730266775:web:ae3ef6b81d83cd9427c9d2",
-  measurementId: "G-9PF085FM41"
-};
-
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const tg = window.Telegram.WebApp;
+    <div class="left-align">
+        <h1 id="user-welcome">Lottery</h1>
         
-        let myTickets = [];
-        let lastClaim = 0;
-        const COOLDOWN_MS = 10 * 60 * 1000;
+        <div class="timer-label">Next Event Status</div>
+        <div id="lottery-status" class="timer-val">Calculating...</div>
 
-        // --- LOADING LOGIC ---
-        function updateProgress(val) {
-            document.getElementById('percentText').innerText = val + "%";
-            document.getElementById('progress-fill').style.width = val + "%";
-            if(val >= 100) {
-                setTimeout(() => {
-                    document.getElementById('loader').style.opacity = '0';
-                    setTimeout(() => {
-                        document.getElementById('loader').style.display = 'none';
-                        document.getElementById('mainContent').style.visibility = 'visible';
-                        document.body.style.overflow = 'auto';
-                    }, 500);
-                }, 300);
-            }
+        <div class="prize-box">
+            <div class="timer-label">Grand Prize</div>
+            <div class="prize-amt">$1,000.00</div>
+        </div>
+
+        <div class="winner-box">
+            <div class="timer-label">Latest Winner Ticket</div>
+            <div id="winner-display" class="winner-num">---- ----</div>
+        </div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="ticket-section-title">Your Ticket Numbers</div>
+    <div id="ticket-container" class="ticket-grid"></div>
+    <div style="height: 120px;"></div> <button id="claim-btn" onclick="showRewardAd()">Claim Ticket (Watch Ad)</button>
+
+<script>
+    // --- 1. CONFIGURATION ---
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAK315b3-j5RrIvx0vH2OE_mdd86Zbd8Wc",
+  authDomain: "test-6f668.firebaseapp.com",
+  databaseURL: "https://test-6f668-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "test-6f668",
+  storageBucket: "test-6f668.firebasestorage.app",
+  messagingSenderId: "1070554867228",
+  appId: "1:1070554867228:web:8f4abf585baa1d82f5e1d9",
+  measurementId: "G-7XZ8F2FD5K"
+};
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const AdController = window.Adsgram.init({ blockId: "24316" });
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    // --- 2. APP STATE ---
+    const user = tg.initDataUnsafe?.user;
+    const userId = user ? user.id.toString() : "dev_test_user";
+    const userName = user ? user.first_name : "Player";
+    
+    let userTickets = [];
+    let lastClaimTime = 0;
+    const MAX_TICKETS = 50;
+    const COOLDOWN_MS = 10 * 60 * 1000;
+
+    document.getElementById('user-welcome').innerText = `Hey, ${userName}!`;
+
+    // --- 3. TIME LOGIC ---
+    function updateClock() {
+        const now = new Date();
+        const hrs = now.getHours();
+        const mins = now.getMinutes();
+        const statusEl = document.getElementById('lottery-status');
+        const claimBtn = document.getElementById('claim-btn');
+
+        // Logic: Start 5am, End 12pm, Result 1pm, Reset 5pm
+        let isOpen = (hrs >= 5 && hrs < 12);
+        let isDrawing = (hrs >= 12 && hrs < 13);
+        
+        if (isOpen) {
+            statusEl.innerText = `Open! Closes in ${11 - hrs}h ${60 - mins}m`;
+        } else if (isDrawing) {
+            statusEl.innerText = "Drawing Winners...";
+        } else {
+            statusEl.innerText = "Closed. Starts at 5 AM";
         }
 
-        async function initApp() {
-            updateProgress(20); // Started
-            try {
-                await firebase.auth().signInAnonymously();
-                updateProgress(50); // Auth Done
+        // Cooldown check
+        const timeSinceLast = Date.now() - lastClaimTime;
+        const cooldownActive = timeSinceLast < COOLDOWN_MS;
 
-                const userId = tg.initDataUnsafe?.user?.id || "WEB_USER";
-                const userRef = db.ref('users/' + userId);
-
-                userRef.on('value', (snap) => {
-                    const data = snap.val();
-                    myTickets = data?.tickets || [];
-                    lastClaim = data?.lastClaim || 0;
-                    renderUI();
-                    updateProgress(100); // Data Received & UI Ready
-                });
-            } catch (e) {
-                document.getElementById('percentText').innerText = "ERROR";
-                console.error(e);
-            }
+        if (!isOpen) {
+            claimBtn.disabled = true;
+            claimBtn.innerText = "Lottery Closed";
+        } else if (userTickets.length >= MAX_TICKETS) {
+            claimBtn.disabled = true;
+            claimBtn.innerText = "Max Tickets (50/50)";
+        } else if (cooldownActive) {
+            claimBtn.disabled = true;
+            const remain = Math.ceil((COOLDOWN_MS - timeSinceLast) / 60000);
+            claimBtn.innerText = `Wait ${remain} min...`;
+        } else {
+            claimBtn.disabled = false;
+            claimBtn.innerText = "Claim Ticket (Watch Ad)";
         }
+    }
 
-        function renderUI() {
-            const table = document.getElementById('ticketTable');
-            table.innerHTML = "";
-            document.getElementById('count').innerText = myTickets.length;
-            for (let i = 0; i < myTickets.length; i += 3) {
-                let row = table.insertRow();
-                for (let j = 0; j < 3; j++) {
-                    let cell = row.insertCell();
-                    cell.innerText = myTickets[i + j] || "";
+    // --- 4. ADS & FIREBASE ---
+    async function showRewardAd() {
+        try {
+            const result = await AdController.show();
+            if (result.done) {
+                // Anti-cheat verification before writing
+                if (Date.now() - lastClaimTime >= COOLDOWN_MS && userTickets.length < MAX_TICKETS) {
+                    addTicketToFirebase();
                 }
             }
-            updateStatus();
-        }
-
-        function updateStatus() {
-    const now = new Date();
-    const hour = now.getHours();
-    const btn = document.getElementById('claimBtn');
-    const cdLabel = document.getElementById('cooldownLabel');
-    const timerEl = document.getElementById('lotteryTimer');
-
-    // Define target times
-    let target = new Date();
-    let statusText = "";
-    let isLotteryOpen = false;
-
-    if (hour >= 17 || hour < 0) {
-        // OPEN: Target is Midnight (Close)
-        statusText = "STATUS: OPEN | CLOSES IN: ";
-        target.setHours(24, 0, 0, 0); 
-        isLotteryOpen = true;
-    } else if (hour >= 14 && hour < 17) {
-        // RESULT: Target is 5 PM (Next Round)
-        statusText = "STATUS: DRAWING | NEXT ROUND IN: ";
-        target.setHours(17, 0, 0, 0);
-    } else {
-        // CLOSED: Target is 5 PM (Open)
-        statusText = "STATUS: CLOSED | OPENS IN: ";
-        target.setHours(17, 0, 0, 0);
-    }
-
-    // Calculate Countdown
-    const diff = target - now;
-    const h = Math.floor(diff / 3600000);
-    const m = Math.floor((diff % 3600000) / 60000);
-    const s = Math.floor((diff % 60000) / 1000);
-
-    // Format with leading zeros: 00:00:00
-    const timeString = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    timerEl.innerText = statusText + timeString;
-
-    // Handle Cooldown and Button States
-    const elapsed = Date.now() - lastClaim;
-    if (!isLotteryOpen) {
-        btn.disabled = true;
-        btn.innerText = "LOTTERY CLOSED";
-    } else if (myTickets.length >= 50) {
-        btn.disabled = true;
-        btn.innerText = "LIMIT REACHED";
-    } else if (elapsed < COOLDOWN_MS) {
-        btn.disabled = true;
-        const rem = Math.ceil((COOLDOWN_MS - elapsed) / 1000);
-        btn.innerText = `COOLDOWN: ${Math.floor(rem/60)}M ${rem%60}S`;
-    } else {
-        btn.disabled = false;
-        btn.innerText = "WATCH AD & CLAIM";
-    }
-}
-
-
-        async function handleClaim() {
-            tg.HapticFeedback.impactOccurred('medium');
-            alert("WATCHING REWARD VIDEO..."); 
-            setTimeout(() => {
-                const newNum = Math.floor(100000 + Math.random() * 900000);
-                const updatedTickets = [...myTickets, newNum];
-                const userId = tg.initDataUnsafe?.user?.id || "WEB_USER";
-                db.ref('users/' + userId).update({
-                    tickets: updatedTickets,
-                    lastClaim: firebase.database.ServerValue.TIMESTAMP
-                });
-            }, 1500);
-        }
-
-        document.getElementById('claimBtn').onclick = handleClaim;
-        setInterval(updateStatus, 1000);
-        tg.ready();
-        tg.expand();
-        initApp();
-    </script>
-</body>
-</html>
