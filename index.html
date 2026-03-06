@@ -5,120 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mega Daily Lottery</title>
     
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://sad.adsgram.ai/js/adsgram-adbox.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
     <style>
-        :root {
-            --bg: #0f0c29;
-            --gold: #fcc200;
-            --white: #ffffff;
-            --glass: rgba(255, 255, 255, 0.1);
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: linear-gradient(to bottom, #0f0c29, #302b63, #24243e);
-            color: var(--white);
-            margin: 0;
-            padding: 20px;
-            overflow-x: hidden;
-        }
-
-        /* Loading Cover */
-        #loader {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            transition: opacity 0.5s ease;
-        }
-
+        :root { --bg: #0f0c29; --gold: #fcc200; --white: #ffffff; --glass: rgba(255, 255, 255, 0.1); }
+        body { font-family: -apple-system, sans-serif; background: linear-gradient(to bottom, #0f0c29, #302b63, #24243e); color: var(--white); margin: 0; padding: 20px; overflow-x: hidden; }
+        #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.5s; }
         .left-align { text-align: left; }
         h1 { font-size: 24px; color: var(--gold); margin: 0; }
         .label { font-size: 13px; opacity: 0.6; margin-top: 15px; }
-        .val { font-size: 18px; font-weight: bold; margin-top: 2px; }
+        .val { font-size: 18px; font-weight: bold; }
         .winner-num { font-size: 26px; color: var(--gold); letter-spacing: 2px; font-weight: 800; }
-
-        .spacer { height: 35px; }
-
-        .ticket-title { font-size: 16px; margin-bottom: 12px; font-weight: 600; }
-        .ticket-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-        }
-
-        .slot {
-            background: var(--glass);
-            padding: 12px 0;
-            border-radius: 6px;
-            font-size: 10px;
-            text-align: center;
-        }
-
-        .slot.active {
-            background: rgba(252, 194, 0, 0.2);
-            color: var(--gold);
-            font-weight: bold;
-        }
-
-        #claim-btn {
-            position: fixed;
-            bottom: 20px;
-            left: 5%;
-            width: 90%;
-            padding: 18px;
-            border: none;
-            border-radius: 12px;
-            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            font-size: 17px;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            cursor: pointer;
-        }
-
-        #claim-btn:disabled {
-            filter: grayscale(1);
-            opacity: 0.5;
-        }
+        .ticket-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
+        .slot { background: var(--glass); padding: 12px 0; border-radius: 6px; font-size: 10px; text-align: center; }
+        .slot.active { background: rgba(252, 194, 0, 0.2); color: var(--gold); font-weight: bold; }
+        #claim-btn { position: fixed; bottom: 20px; left: 5%; width: 90%; padding: 18px; border: none; border-radius: 12px; background: linear-gradient(45deg, #f093fb, #f5576c); color: white; font-size: 17px; font-weight: bold; cursor: pointer; }
+        #claim-btn:disabled { filter: grayscale(1); opacity: 0.5; }
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <div style="font-size: 18px;">Syncing Lottery Data...</div>
-    </div>
+    <div id="loader"><div>Syncing Data...</div></div>
 
     <div class="left-align">
         <h1 id="user-name">Daily Lottery</h1>
-        
         <div class="label">Time Status</div>
         <div id="status-text" class="val">Connecting...</div>
-
         <div class="label">Prize Pool</div>
         <div class="val" style="color: #00ff88;">$1,000.00</div>
-
         <div class="label">Winning Ticket</div>
         <div id="winner-val" class="winner-num">---- ----</div>
     </div>
 
-    <div class="spacer"></div>
-
-    <div class="ticket-title">Your Ticket Numbers</div>
+    <div style="margin-top: 30px;" class="label">Your Ticket Numbers</div>
     <div id="grid" class="ticket-grid"></div>
 
-    <div style="height: 100px;"></div>
     <button id="claim-btn" onclick="runAd()">Claim Ticket (Watch Ad)</button>
 
 <script>
-    // --- FIREBASE CONFIG ---
     // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyAK315b3-j5RrIvx0vH2OE_mdd86Zbd8Wc",
@@ -132,140 +59,81 @@ const firebaseConfig = {
 };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
-    // --- TELEGRAM ---
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    // --- STATE ---
-    const user = tg.initDataUnsafe?.user;
-    const userId = user ? user.id.toString() : "dev_user";
-    const firstName = user ? user.first_name : "Player";
-    
-    let userTickets = [];
-    let lastClaimTime = 0;
-    let AdController = null;
-    const MAX = 50;
-    const COOLDOWN = 10 * 60 * 1000;
+    const userId = tg.initDataUnsafe?.user?.id.toString() || "dev_user";
+    const firstName = tg.initDataUnsafe?.user?.first_name || "Player";
+    let userTickets = [], lastClaimTime = 0, AdController = null, retryCount = 0;
 
     document.getElementById('user-name').innerText = `Hello, ${firstName}!`;
 
-    // --- ADSGRAM SAFETY INIT ---
+    // RECURSIVE AD INIT (Fixes the "undefined" error)
     function initAds() {
         if (window.Adsgram) {
             AdController = window.Adsgram.init({ blockId: "24441" });
+            console.log("Adsgram Ready");
+        } else if (retryCount < 10) {
+            retryCount++;
+            setTimeout(initAds, 500); 
         } else {
-            console.warn("Adsgram SDK not found (Check AdBlock)");
+            console.error("Adsgram blocked by browser.");
         }
     }
 
     function updateAppLogic() {
-        const now = new Date();
-        const hrs = now.getHours();
+        const hrs = new Date().getHours();
         const statusEl = document.getElementById('status-text');
         const btn = document.getElementById('claim-btn');
-
         const isOpen = (hrs >= 5 && hrs < 12);
-        const isDrawing = (hrs >= 12 && hrs < 13);
-        
-        if (isOpen) statusEl.innerText = "Entry Open (Closes 12 PM)";
-        else if (isDrawing) statusEl.innerText = "Drawing Results...";
+        const diff = Date.now() - lastClaimTime;
+        const onCooldown = diff < (10 * 60 * 1000);
+
+        if (hrs >= 12 && hrs < 13) statusEl.innerText = "Drawing Results...";
+        else if (isOpen) statusEl.innerText = "Entry Open (Closes 12 PM)";
         else statusEl.innerText = "Closed (Next at 5 PM)";
 
-        const diff = Date.now() - lastClaimTime;
-        const onCooldown = diff < COOLDOWN;
-
-        if (!isOpen) {
+        if (!isOpen) { btn.disabled = true; btn.innerText = "Closed"; }
+        else if (userTickets.length >= 50) { btn.disabled = true; btn.innerText = "Limit Reached"; }
+        else if (onCooldown) {
             btn.disabled = true;
-            btn.innerText = "Lottery Closed";
-        } else if (userTickets.length >= MAX) {
-            btn.disabled = true;
-            btn.innerText = "Max Tickets (50/50)";
-        } else if (onCooldown) {
-            btn.disabled = true;
-            const mins = Math.ceil((COOLDOWN - diff) / 60000);
-            btn.innerText = `Wait ${mins} min...`;
-        } else {
-            btn.disabled = false;
-            btn.innerText = "Claim Ticket (Watch Ad)";
-        }
+            btn.innerText = `Wait ${Math.ceil(((10*60*1000)-diff)/60000)}m`;
+        } else { btn.disabled = false; btn.innerText = "Claim Ticket (Watch Ad)"; }
     }
 
     async function runAd() {
-        if (!AdController) {
-            tg.showAlert("Ad provider not loaded. Disable AdBlock and refresh.");
-            return;
-        }
-
+        if (!AdController) return tg.showAlert("Ad not ready. Disable AdBlock.");
         try {
             const res = await AdController.show();
             if (res.done) {
-                const ticket = Math.floor(100000 + Math.random() * 900000);
                 const ts = Date.now();
-                
-                // Save to Firebase
-                const updates = {};
-                updates[`users/${userId}/tickets/t_${ts}`] = ticket;
-                updates[`users/${userId}/lastClaim`] = ts;
-                
-                db.ref().update(updates).then(() => {
-                    tg.HapticFeedback.notificationOccurred('success');
-                });
+                db.ref(`users/${userId}/tickets/t_${ts}`).set(Math.floor(100000 + Math.random() * 900000));
+                db.ref(`users/${userId}/lastClaim`).set(ts);
+                tg.HapticFeedback.notificationOccurred('success');
             }
-        } catch (e) {
-            tg.showAlert("Ad failed or skipped.");
-        }
+        } catch (e) { tg.showAlert("Ad skipped."); }
     }
 
-    function renderTickets() {
-        const grid = document.getElementById('grid');
-        grid.innerHTML = '';
-        for (let i = 0; i < MAX; i++) {
-            const div = document.createElement('div');
-            const val = userTickets[i];
-            div.className = val ? 'slot active' : 'slot';
-            div.innerText = val || '------';
-            grid.appendChild(div);
-        }
-    }
-
-    function hideLoader() {
-        const l = document.getElementById('loader');
-        if(l) {
-            l.style.opacity = '0';
-            setTimeout(() => l.style.display = 'none', 500);
-        }
-    }
-
-    // --- MAIN INIT ---
     function init() {
         initAds();
-
-        // Sync User
         db.ref(`users/${userId}`).on('value', (snap) => {
             const data = snap.val();
-            if (data) {
-                userTickets = data.tickets ? Object.values(data.tickets) : [];
-                lastClaimTime = data.lastClaim || 0;
+            userTickets = data?.tickets ? Object.values(data.tickets) : [];
+            lastClaimTime = data?.lastClaim || 0;
+            const grid = document.getElementById('grid'); grid.innerHTML = '';
+            for (let i = 0; i < 50; i++) {
+                const div = document.createElement('div');
+                div.className = userTickets[i] ? 'slot active' : 'slot';
+                div.innerText = userTickets[i] || '------';
+                grid.appendChild(div);
             }
-            renderTickets();
-            hideLoader();
-        }, (err) => {
-            console.error(err);
-            hideLoader();
+            document.getElementById('loader').style.display = 'none';
         });
-
-        // Sync Winner
         db.ref(`lottery/lastWinner`).on('value', (snap) => {
             document.getElementById('winner-val').innerText = snap.val() || "Awaiting...";
         });
-
-        // Safety timeout
-        setTimeout(hideLoader, 5000);
         setInterval(updateAppLogic, 1000);
-        updateAppLogic();
     }
-
     window.onload = init;
 </script>
 </body>
