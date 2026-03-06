@@ -2,26 +2,75 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>RichAds Test</title>
+<title>Telegram Reward Ad</title>
 </head>
 <body>
 
-<button onclick="showAd()">Watch Ad</button>
+<button id="adBtn" onclick="watchAd()">Loading Ads...</button>
+<p id="status"></p>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
 
 <script>
 
+let adReady = false;
+let adRunning = false;
+
 window.TelegramAdsController = new TelegramAdsController();
 
 window.TelegramAdsController.initialize({
   pubId: "1004311",
-  appId: "6445"
+  appId: "6445",
+
+  onInit: function(){
+    adReady = true;
+    document.getElementById("adBtn").innerText = "Watch Ad";
+  },
+
+  onError: function(){
+    document.getElementById("status").innerText = "Ad system error";
+  }
+
 });
 
-function showAd(){
-  window.TelegramAdsController.showAd();
+function watchAd(){
+
+if(!adReady){
+  document.getElementById("status").innerText="Ads still loading...";
+  return;
+}
+
+if(adRunning){
+  return;
+}
+
+adRunning = true;
+document.getElementById("status").innerText="Loading ad...";
+
+window.TelegramAdsController.showAd({
+
+  onClose: function(){
+    adRunning = false;
+    document.getElementById("status").innerText="Ad finished";
+
+    giveReward();
+  },
+
+  onError: function(){
+    adRunning = false;
+    document.getElementById("status").innerText="Ad not available, try again";
+  }
+
+});
+
+}
+
+function giveReward(){
+
+// Example reward
+alert("Ticket earned!");
+
 }
 
 </script>
