@@ -2,67 +2,27 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Monetag In-App Interstitial Test</title>
+<title>Monetag Test</title>
 
-<!-- Monetag SDK -->
-<script src="//libtl.com/sdk.js"
-        data-zone="10688536"
-        data-sdk="show_10688536"></script>
-
-<style>
-body{
-font-family: Arial;
-text-align:center;
-margin-top:80px;
-background:#f5f5f5;
-}
-
-button{
-font-size:20px;
-padding:15px 30px;
-background:#0088cc;
-color:white;
-border:none;
-border-radius:10px;
-cursor:pointer;
-}
-
-button:hover{
-background:#006699;
-}
-</style>
+<script src='//libtl.com/sdk.js' data-zone='10688536' data-sdk='show_10688536'></script>
 
 </head>
+<body style="text-align:center; margin-top:100px;">
 
-<body>
+<h2>Monetag Rewarded Ads Test</h2>
 
-<h2>Monetag In-App Interstitial Test</h2>
-
-<button onclick="showAd()">Show Ad</button>
-
-<p id="status"></p>
+<button onclick="watchAd()">Watch Ad</button>
 
 <script>
+function watchAd() {
 
-function showAd(){
-
-document.getElementById("status").innerText="Requesting Ad...";
-
-show_10688536({
-  type: 'inApp',
-  inAppSettings: {
-    frequency: 2,
-    capping: 0.1,
-    interval: 30,
-    timeout: 5,
-    everyPage: false
-  }
-});
-
-console.log("Ad request sent");
+    show_10688536().then(() => {
+        alert("Ad watched successfully!");
+    }).catch(() => {
+        alert("Ad failed or skipped");
+    });
 
 }
-
 </script>
 
 </body>
