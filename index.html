@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mega Lottery</title>
+    <title>Mega Daily Lottery</title>
+    
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://sad.adsgram.ai/js/adsgram-adbox.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -18,7 +19,7 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: linear-gradient(to bottom, #0f0c29, #302b63, #24243e);
             color: var(--white);
             margin: 0;
@@ -26,12 +27,12 @@
             overflow-x: hidden;
         }
 
+        /* Loading Cover */
         #loader {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg);
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 9999;
@@ -42,7 +43,7 @@
         h1 { font-size: 24px; color: var(--gold); margin: 0; }
         .label { font-size: 13px; opacity: 0.6; margin-top: 15px; }
         .val { font-size: 18px; font-weight: bold; margin-top: 2px; }
-        .winner-num { font-size: 26px; color: var(--gold); letter-spacing: 2px; }
+        .winner-num { font-size: 26px; color: var(--gold); letter-spacing: 2px; font-weight: 800; }
 
         .spacer { height: 35px; }
 
@@ -59,7 +60,6 @@
             border-radius: 6px;
             font-size: 10px;
             text-align: center;
-            transition: 0.3s;
         }
 
         .slot.active {
@@ -81,6 +81,7 @@
             font-size: 17px;
             font-weight: bold;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            cursor: pointer;
         }
 
         #claim-btn:disabled {
@@ -99,7 +100,7 @@
         <h1 id="user-name">Daily Lottery</h1>
         
         <div class="label">Time Status</div>
-        <div id="status-text" class="val">Loading timer...</div>
+        <div id="status-text" class="val">Connecting...</div>
 
         <div class="label">Prize Pool</div>
         <div class="val" style="color: #00ff88;">$1,000.00</div>
@@ -110,7 +111,7 @@
 
     <div class="spacer"></div>
 
-    <div class="ticket-title">Your Tickets (Max 50)</div>
+    <div class="ticket-title">Your Ticket Numbers</div>
     <div id="grid" class="ticket-grid"></div>
 
     <div style="height: 100px;"></div>
@@ -132,24 +133,33 @@ const firebaseConfig = {
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // --- TELEGRAM & ADS ---
+    // --- TELEGRAM ---
     const tg = window.Telegram.WebApp;
     tg.expand();
-    const AdController = window.Adsgram.init({ blockId: "24441" });
 
     // --- STATE ---
     const user = tg.initDataUnsafe?.user;
-    const userId = user ? user.id.toString() : "test_user_123";
+    const userId = user ? user.id.toString() : "dev_user";
     const firstName = user ? user.first_name : "Player";
     
     let userTickets = [];
     let lastClaimTime = 0;
+    let AdController = null;
     const MAX = 50;
     const COOLDOWN = 10 * 60 * 1000;
 
     document.getElementById('user-name').innerText = `Hello, ${firstName}!`;
 
-    function updateApp() {
+    // --- ADSGRAM SAFETY INIT ---
+    function initAds() {
+        if (window.Adsgram) {
+            AdController = window.Adsgram.init({ blockId: "24441" });
+        } else {
+            console.warn("Adsgram SDK not found (Check AdBlock)");
+        }
+    }
+
+    function updateAppLogic() {
         const now = new Date();
         const hrs = now.getHours();
         const statusEl = document.getElementById('status-text');
@@ -158,9 +168,9 @@ const firebaseConfig = {
         const isOpen = (hrs >= 5 && hrs < 12);
         const isDrawing = (hrs >= 12 && hrs < 13);
         
-        if (isOpen) statusEl.innerText = "Entry Open (Closes 12PM)";
+        if (isOpen) statusEl.innerText = "Entry Open (Closes 12 PM)";
         else if (isDrawing) statusEl.innerText = "Drawing Results...";
-        else statusEl.innerText = "Closed (Next at 5PM)";
+        else statusEl.innerText = "Closed (Next at 5 PM)";
 
         const diff = Date.now() - lastClaimTime;
         const onCooldown = diff < COOLDOWN;
@@ -170,11 +180,11 @@ const firebaseConfig = {
             btn.innerText = "Lottery Closed";
         } else if (userTickets.length >= MAX) {
             btn.disabled = true;
-            btn.innerText = "Limit Reached (50/50)";
+            btn.innerText = "Max Tickets (50/50)";
         } else if (onCooldown) {
             btn.disabled = true;
             const mins = Math.ceil((COOLDOWN - diff) / 60000);
-            btn.innerText = `Cooldown: ${mins}m left`;
+            btn.innerText = `Wait ${mins} min...`;
         } else {
             btn.disabled = false;
             btn.innerText = "Claim Ticket (Watch Ad)";
@@ -182,24 +192,32 @@ const firebaseConfig = {
     }
 
     async function runAd() {
+        if (!AdController) {
+            tg.showAlert("Ad provider not loaded. Disable AdBlock and refresh.");
+            return;
+        }
+
         try {
             const res = await AdController.show();
             if (res.done) {
                 const ticket = Math.floor(100000 + Math.random() * 900000);
                 const ts = Date.now();
                 
+                // Save to Firebase
                 const updates = {};
                 updates[`users/${userId}/tickets/t_${ts}`] = ticket;
                 updates[`users/${userId}/lastClaim`] = ts;
                 
-                db.ref().update(updates);
+                db.ref().update(updates).then(() => {
+                    tg.HapticFeedback.notificationOccurred('success');
+                });
             }
         } catch (e) {
-            tg.showAlert("Ad failed to load. Try again.");
+            tg.showAlert("Ad failed or skipped.");
         }
     }
 
-    function render() {
+    function renderTickets() {
         const grid = document.getElementById('grid');
         grid.innerHTML = '';
         for (let i = 0; i < MAX; i++) {
@@ -211,35 +229,44 @@ const firebaseConfig = {
         }
     }
 
+    function hideLoader() {
+        const l = document.getElementById('loader');
+        if(l) {
+            l.style.opacity = '0';
+            setTimeout(() => l.style.display = 'none', 500);
+        }
+    }
+
+    // --- MAIN INIT ---
     function init() {
-        // Fetch User
+        initAds();
+
+        // Sync User
         db.ref(`users/${userId}`).on('value', (snap) => {
-            const val = snap.val();
-            if (val) {
-                userTickets = val.tickets ? Object.values(val.tickets) : [];
-                lastClaimTime = val.lastClaim || 0;
+            const data = snap.val();
+            if (data) {
+                userTickets = data.tickets ? Object.values(data.tickets) : [];
+                lastClaimTime = data.lastClaim || 0;
             }
-            render();
+            renderTickets();
+            hideLoader();
+        }, (err) => {
+            console.error(err);
             hideLoader();
         });
 
-        // Fetch Winner
+        // Sync Winner
         db.ref(`lottery/lastWinner`).on('value', (snap) => {
-            document.getElementById('winner-val').innerText = snap.val() || "Waiting...";
+            document.getElementById('winner-val').innerText = snap.val() || "Awaiting...";
         });
 
-        // Anti-stuck safety
-        setTimeout(hideLoader, 4000);
-        setInterval(updateApp, 1000);
+        // Safety timeout
+        setTimeout(hideLoader, 5000);
+        setInterval(updateAppLogic, 1000);
+        updateAppLogic();
     }
 
-    function hideLoader() {
-        const l = document.getElementById('loader');
-        l.style.opacity = '0';
-        setTimeout(() => l.style.display = 'none', 500);
-    }
-
-    init();
+    window.onload = init;
 </script>
 </body>
 </html>
