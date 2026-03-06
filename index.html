@@ -1,160 +1,32 @@
 <!DOCTYPE html>
-
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>RichAds Telegram Playable Test</title>
-
-<!-- Telegram Mini App SDK -->
-
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-<!-- RichAds Telegram SDK -->
-
-<script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
-
-<style>
-body{
-font-family:Arial;
-text-align:center;
-background:#121212;
-color:white;
-margin-top:120px;
-}
-
-button{
-padding:15px 35px;
-font-size:20px;
-border:none;
-border-radius:10px;
-background:#28a745;
-color:white;
-cursor:pointer;
-}
-
-button:disabled{
-background:gray;
-}
-</style>
-
+<title>AdsGram Test</title>
+<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 </head>
 
-<body>
+<body style="text-align:center;margin-top:50px;font-family:sans-serif">
 
-<h2>Watch Ad & Get Reward</h2>
+<h2>AdsGram Rewarded Ads Test</h2>
 
-<button id="watchAdBtn">Watch Ad</button>
-
-<p id="status">Loading Ads...</p>
+<button onclick="showAd()" style="padding:15px 30px;font-size:18px">
+Watch Ad
+</button>
 
 <script>
-
-let adsReady = false;
-let adShowing = false;
-
-const btn = document.getElementById("watchAdBtn");
-const statusText = document.getElementById("status");
-
-
-// Initialize RichAds
-window.TelegramAdsController = new TelegramAdsController();
-
-TelegramAdsController.initialize({
-pubId: "1004311",
-appId: "6445"
-})
-
-.then(() => {
-
-console.log("RichAds initialized");
-
-adsReady = true;
-
-statusText.innerText = "Ads Ready";
-
-TelegramAdsController.preloadAd();
-
-})
-
-.catch((err)=>{
-
-console.log("Init error:",err);
-
-statusText.innerText = "Ads failed to load";
-
+const AdController = window.Adsgram.init({
+  blockId: 24441",
+  debug: true
 });
 
-
-
-// Watch Ad button
-btn.onclick = function(){
-
-if(!adsReady){
-alert("Ads still loading");
-return;
+function showAd(){
+  AdController.show().then(() => {
+    alert("User watched the ad. Reward them!");
+  }).catch((error) => {
+    alert("Ad error: " + error);
+  });
 }
-
-if(adShowing){
-return;
-}
-
-adShowing = true;
-
-btn.disabled = true;
-
-statusText.innerText = "Loading Ad...";
-
-TelegramAdsController.showAd()
-
-.then(()=>{
-
-console.log("Ad finished");
-
-statusText.innerText = "Reward Granted 🎉";
-
-giveReward();
-
-setTimeout(()=>{
-btn.disabled=false;
-adShowing=false;
-statusText.innerText="Watch another ad";
-TelegramAdsController.preloadAd();
-},2000);
-
-})
-
-.catch(()=>{
-
-console.log("Ad failed");
-
-statusText.innerText = "Ad not available";
-
-setTimeout(()=>{
-btn.disabled=false;
-adShowing=false;
-statusText.innerText="Try again";
-},2000);
-
-});
-
-};
-
-
-
-// Reward function
-function giveReward(){
-
-alert("You received 1 ticket!");
-
-
-// Example reward logic
-// userTickets++
-// updateUI()
-
-}
-
 </script>
 
 </body>
