@@ -37,28 +37,27 @@
             overflow: hidden; 
         }
 
+        /* --- LOADING SCREEN --- */
+        #loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color);
+            z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 0.4s ease-out;
+        }
+        .loader-content { width: 80%; max-width: 300px; text-align: center; }
+        .loader-title { font-size: 2.8rem; font-weight: 900; margin-bottom: 5px; color: white; text-shadow: 0 0 20px rgba(59, 130, 246, 0.6); letter-spacing: 1px; }
+        .loader-subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 30px; letter-spacing: 0.5px; }
+        .progress-bar-container { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; position: relative; }
+        .progress-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary), #8b5cf6); transition: width 0.2s ease-out; box-shadow: 0 0 10px rgba(139, 92, 246, 0.8); }
+
         /* App Container Layout */
         #app {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            max-width: 480px;
-            margin: 0 auto;
-            background-color: var(--bg-color);
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            position: relative;
+            display: flex; flex-direction: column; height: 100vh; max-width: 480px; margin: 0 auto; background-color: var(--bg-color); box-shadow: 0 0 20px rgba(0,0,0,0.5); position: relative;
         }
 
         /* Header (Wallet Info) */
-        header {
-            padding: 20px;
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #334155;
-            z-index: 10;
-        }
+        header { padding: 20px; background: linear-gradient(135deg, #1e293b, #0f172a); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; z-index: 10; }
         .balance-pill { background: rgba(255,255,255,0.05); padding: 8px 16px; border-radius: 20px; display: flex; align-items: center; gap: 8px; font-weight: 600; }
         .balance-pill.rupee { color: var(--success); }
         .balance-pill.ticket { color: var(--primary); }
@@ -67,27 +66,22 @@
         #screens-container { flex: 1; overflow-y: auto; position: relative; }
         .screen { display: none; padding: 20px; animation: fadeIn 0.2s ease-out; }
         .screen.active { display: block; }
-
         @keyframes fadeIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
 
         /* Typography & Components */
         h2 { margin-bottom: 15px; font-size: 1.5rem; }
         p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.4; }
-        
         .card { background: var(--card-bg); border-radius: var(--border-radius); padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); position: relative; }
-
         button { width: 100%; padding: 14px; border: none; border-radius: 12px; background: var(--primary); color: white; font-size: 1rem; font-weight: bold; cursor: pointer; transition: transform 0.1s, opacity 0.2s; }
         button:active { transform: scale(0.98); }
         button:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
         button.success-btn { background: var(--success); }
-        
         input { width: 100%; padding: 14px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 12px; margin-bottom: 15px; font-size: 1rem; text-align: center; }
         input:focus { outline: none; border-color: var(--primary); }
-
         .back-link { display: inline-flex; align-items: center; color: var(--primary); font-weight: bold; font-size: 0.9rem; margin-bottom: 20px; cursor: pointer; padding: 5px 0; }
         .back-link:active { opacity: 0.7; }
 
-        /* Task Board (Earn Screen) */
+        /* Task Board */
         .task-row { display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #334155; }
         .task-info { display: flex; align-items: center; gap: 15px; }
         .task-icon { font-size: 2rem; }
@@ -97,16 +91,14 @@
         .task-btn { padding: 10px 15px; font-size: 0.9rem; border-radius: 8px; }
         .task-timer { color: var(--text-muted); font-family: monospace; font-size: 0.9rem; font-weight: bold; }
 
-        /* Game Grids & Lottery */
+        /* Games & Lottery */
         .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .game-card { text-align: center; padding: 20px 10px; cursor: pointer; border: 1px solid #334155; transition: transform 0.1s; }
         .game-card:active { background: #334155; transform: scale(0.98); }
         .game-icon { font-size: 2.5rem; margin-bottom: 10px; }
-
         .lottery-banner { background: linear-gradient(135deg, #b4161b, #f59e0b); color: white; text-align: center; border-radius: var(--border-radius); padding: 20px; margin-bottom: 20px; cursor: pointer; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2); transition: transform 0.1s; }
         .lottery-banner:active { transform: scale(0.98); }
         .lottery-timer { font-size: 1.5rem; font-weight: bold; letter-spacing: 2px; margin: 10px 0; font-family: monospace; }
-        
         .lottery-table-container { max-height: 250px; overflow-y: auto; margin-top: 15px; border-radius: 8px; border: 1px solid #334155; background: rgba(0,0,0,0.2); }
         .lottery-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         .lottery-table td { padding: 10px 2px; text-align: center; border-bottom: 1px solid #334155; font-family: monospace; font-size: 0.75rem; color: var(--warning); border-right: 1px solid #334155; }
@@ -123,14 +115,14 @@
         .modal { background: var(--card-bg); width: 100%; max-width: 400px; border-radius: var(--border-radius); padding: 25px; text-align: center; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         
-        /* --- SPIN WHEEL UI --- */
+        /* Spin Wheel */
         .wheel-container { position: relative; width: 280px; height: 280px; margin: 30px auto; overflow: hidden; padding: 10px; }
         .wheel-pointer { position: absolute; top: -5px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 35px solid var(--text-main); z-index: 10; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.8)); }
         .wheel { width: 100%; height: 100%; border-radius: 50%; border: 6px solid var(--card-bg); box-shadow: 0 0 20px rgba(59, 130, 246, 0.4), inset 0 0 10px rgba(0,0,0,0.5); background: conic-gradient( #ef4444 0deg 36deg, #f97316 36deg 72deg, #f59e0b 72deg 108deg, #84cc16 108deg 144deg, #10b981 144deg 180deg, #06b6d4 180deg 216deg, #3b82f6 216deg 252deg, #6366f1 252deg 288deg, #8b5cf6 288deg 324deg, #ec4899 324deg 360deg ); transition: transform 3.8s cubic-bezier(0.2, 0.05, 0.1, 1); position: relative; }
         .wheel-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 45px; height: 45px; background: var(--bg-color); border-radius: 50%; border: 4px solid white; z-index: 5; box-shadow: 0 0 15px rgba(0,0,0,0.8); }
         .wheel-slice { position: absolute; top: 0; left: 50%; width: 80px; height: 50%; margin-left: -40px; transform-origin: bottom center; display: flex; justify-content: center; padding-top: 12px; color: white; font-weight: 900; font-size: 0.8rem; text-align: center; line-height: 1.1; text-shadow: 1px 1px 3px rgba(0,0,0,0.9); z-index: 1; }
 
-        /* --- SCRATCH CARD UI --- */
+        /* Scratch Card */
         .scratch-card-wrapper { padding: 15px; background: linear-gradient(135deg, #fcd34d, #d97706); border-radius: 20px; margin: 20px auto; max-width: 300px; box-shadow: 0 10px 25px rgba(217, 119, 6, 0.3); }
         .scratch-area { width: 100%; height: 160px; background: var(--bg-color); border: 3px dashed rgba(255, 255, 255, 0.5); border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; color: #94a3b8; cursor: pointer; position: relative; overflow: hidden; }
         .scratch-cover { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #cbd5e1 25%, #94a3b8 25%, #94a3b8 50%, #cbd5e1 50%, #cbd5e1 75%, #94a3b8 75%, #94a3b8 100%); background-size: 40px 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.6s ease-out, transform 0.6s ease-out; z-index: 2; color: #1e293b; font-weight: 900; font-size: 1.2rem; text-shadow: 1px 1px 0px rgba(255,255,255,0.4); box-shadow: inset 0 0 30px rgba(0,0,0,0.3); }
@@ -138,7 +130,7 @@
         .scratch-result { position: relative; z-index: 1; font-weight: 900; color: var(--success); font-size: 2rem; text-shadow: 0 0 15px rgba(16, 185, 129, 0.5); animation: pulseResult 1s infinite alternate; text-align: center; padding: 10px; }
         @keyframes pulseResult { from { transform: scale(1); } to { transform: scale(1.05); } }
 
-        /* --- JHANDI MUNDA UI --- */
+        /* Jhandi Munda */
         .symbol-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 25px;}
         .symbol-btn { background: #0f172a; border: 2px solid #334155; border-radius: 12px; font-size: 2.2rem; padding: 15px 0; cursor: pointer; transition: all 0.2s;}
         .symbol-btn.selected { border-color: var(--primary); background: rgba(59, 130, 246, 0.2); transform: scale(1.05); box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);}
@@ -154,6 +146,16 @@
     </style>
 </head>
 <body>
+
+<div id="loading-screen">
+    <div class="loader-content">
+        <h1 class="loader-title">CryptoPlay</h1>
+        <p class="loader-subtitle">Loading your wallet...</p>
+        <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="loader-progress"></div>
+        </div>
+    </div>
+</div>
 
 <script>
     window.showStandardAd = null;
@@ -264,7 +266,6 @@
             <div class="card" style="text-align: center; min-height: 400px;">
                 <div style="text-align: left;"><div class="back-link" onclick="window.openScreen('games')">⬅ Back to Menu</div></div>
                 <h2>Lucky Spin</h2>
-                
                 <div class="wheel-container">
                     <div class="wheel-pointer"></div>
                     <div class="wheel" id="spin-wheel">
@@ -281,7 +282,6 @@
                         <div class="wheel-slice" style="transform: rotate(342deg);"><br>₹500</div>
                     </div>
                 </div>
-                
                 <p id="spin-msg" style="margin-bottom: 25px;">Cost: 1 Ticket to win up to ₹500!</p>
                 <button id="btn-spin" onclick="window.playSpin()">Spin Now</button>
             </div>
@@ -346,7 +346,6 @@
                 <p id="withdraw-status" style="margin-top: 15px; text-align: center; color: var(--warning); display: none;"></p>
             </div>
         </div>
-
     </div>
 
     <nav>
@@ -380,6 +379,10 @@
     </div>
 </div>
 
+<style>
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+</style>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
     import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
@@ -395,7 +398,6 @@ const firebaseConfig = {
   appId: "1:1070554867228:web:8f4abf585baa1d82f5e1d9",
   measurementId: "G-7XZ8F2FD5K"
 };
-
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
@@ -417,6 +419,14 @@ const firebaseConfig = {
     function getTodayString() {
         let d = new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
     }
+
+    // Initialize Loading Bar Animation
+    let progress = 0;
+    let progressInterval = setInterval(() => {
+        progress += 5;
+        if(progress > 85) progress = 85; // Hold at 85% while waiting for Firebase
+        document.getElementById('loader-progress').style.width = progress + '%';
+    }, 50);
 
     async function init() {
         try {
@@ -442,6 +452,15 @@ const firebaseConfig = {
         updateUI();
         setInterval(gameLoop, 1000);
         renderLotteryTable();
+
+        // Finish Loading Screen Animation
+        clearInterval(progressInterval);
+        document.getElementById('loader-progress').style.width = '100%';
+        setTimeout(() => {
+            let loader = document.getElementById('loading-screen');
+            loader.style.opacity = '0';
+            setTimeout(() => loader.style.display = 'none', 400);
+        }, 300);
     }
 
     function saveState() {
@@ -488,38 +507,22 @@ const firebaseConfig = {
         let now = Date.now();
         if (type === 'standard') {
             if (now - state.lastAdTime < COOLDOWN_MS) return;
+            if (typeof window.showStandardAd !== 'function') return showAlert("Ad Loading", "The ad network is still loading. Please try again in a few seconds.");
             
-            if (typeof window.showStandardAd !== 'function') {
-                return showAlert("Ad Loading", "The ad network is still loading. Please try again in a few seconds.");
-            }
-            
-            // Trigger actual network ad
             window.showStandardAd().then(() => {
-                state.tickets += 1; 
-                state.lastAdTime = Date.now(); 
-                saveState();
-                showAlert("Success!", "You watched the ad and earned 1 Ticket!");
+                state.tickets += 1; state.lastAdTime = Date.now(); saveState(); showAlert("Success!", "You watched the ad and earned 1 Ticket!");
             }).catch(e => {
-                console.error('Ad Play Error:', e);
-                showAlert("Ad Error", "Failed to load the ad video. Please try again later.");
+                console.error('Ad Play Error:', e); showAlert("Ad Error", "Failed to load the ad video. Please try again later.");
             });
 
         } else if (type === 'rewarded') {
             if (now - state.lastRewardedAdTime < COOLDOWN_MS) return;
-            
-            if (typeof window.show_10688536 !== 'function') {
-                 return showAlert("Ad Loading", "The premium ad network is still loading. Please try again in a few seconds.");
-            }
+            if (typeof window.show_10688536 !== 'function') return showAlert("Ad Loading", "The premium ad network is still loading. Please try again in a few seconds.");
 
-            // Trigger actual rewarded network ad
             window.show_10688536('pop').then(() => {
-                state.tickets += 2; 
-                state.lastRewardedAdTime = Date.now(); 
-                saveState();
-                showAlert("Big Reward!", "You completed the premium ad and earned 2 Tickets!");
+                state.tickets += 2; state.lastRewardedAdTime = Date.now(); saveState(); showAlert("Big Reward!", "You completed the premium ad and earned 2 Tickets!");
             }).catch(e => {
-                console.error('Rewarded Ad Error:', e);
-                showAlert("Ad Error", "Failed to load the premium popup ad. Please try again later.");
+                console.error('Rewarded Ad Error:', e); showAlert("Ad Error", "Failed to load the premium popup ad. Please try again later.");
             });
         }
     };
@@ -562,10 +565,8 @@ const firebaseConfig = {
         setTimeout(() => {
             if (reward.type === 'ticket') state.tickets += reward.val;
             if (reward.type === 'rupee') state.rupees += reward.val;
-            saveState(); 
-            document.getElementById('spin-msg').innerText = "Cost: 1 Ticket to win up to ₹500!";
-            showAlert("Spin Result", `🎰 ${reward.name.replace('\n', ' ')}`); 
-            btn.disabled = false;
+            saveState(); document.getElementById('spin-msg').innerText = "Cost: 1 Ticket to win up to ₹500!";
+            showAlert("Spin Result", `🎰 ${reward.name.replace('\n', ' ')}`); btn.disabled = false;
         }, 4000); 
     };
 
