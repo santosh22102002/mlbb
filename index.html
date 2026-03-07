@@ -1,71 +1,81 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>RichAds Telegram Mini App Test</title>
+<title>OnClicka TMA Ads Test</title>
 
-<!-- Telegram WebApp SDK -->
+<!-- Telegram WebApp -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-<!-- RichAds Telegram SDK -->
-<script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
+<!-- OnClicka TMA Ads -->
+<script src="https://js.onclckvd.com/in-stream-ad-admanager/tma.js"></script>
 
 <style>
 body{
   margin:0;
-  background:#111;
+  font-family:Arial, sans-serif;
+  background:#0f172a;
   color:white;
-  font-family:Arial;
   display:flex;
   justify-content:center;
   align-items:center;
   height:100vh;
 }
 
-button{
+#playAd{
   position:fixed;
-  bottom:25px;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
   padding:15px 30px;
   font-size:18px;
   border:none;
-  border-radius:10px;
-  background:#00c853;
+  border-radius:12px;
+  background:#22c55e;
   color:white;
+  cursor:pointer;
+  box-shadow:0 4px 15px rgba(0,0,0,0.3);
 }
 </style>
-
-<script>
-function loadAds(){
-
-  try{
-
-    window.TelegramAdsController = new TelegramAdsController();
-
-    window.TelegramAdsController.initialize({
-      pubId: "1004311",
-      appId: "6445"
-    });
-
-    alert("Ad request sent");
-
-  }catch(e){
-
-    alert("Ads failed: " + e);
-
-  }
-
-}
-</script>
-
 </head>
 
 <body>
 
-<h2>RichAds Telegram Mini App Test</h2>
+<h2>OnClicka Telegram Mini App Ad Test</h2>
 
-<button onclick="loadAds()">Load Ad</button>
+<button id="playAd">Play Ads</button>
+
+<script>
+let showAd;
+
+// Initialize the ad engine
+window.initCdTma({ id: '6112896' })
+.then(show => {
+    showAd = show;
+    console.log("Ad system ready");
+})
+.catch(e => console.log("Init error:", e));
+
+// Button click to show ad
+document.getElementById("playAd").onclick = function(){
+    if(!showAd){
+        alert("Ad not ready yet");
+        return;
+    }
+
+    showAd()
+    .then(()=>{
+        console.log("tma ad played");
+        alert("Ad watched successfully!");
+    })
+    .catch(e=>{
+        console.log("Ad error:", e);
+        alert("Ad failed or unavailable");
+    });
+};
+</script>
 
 </body>
 </html>
