@@ -4,72 +4,132 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MOBA COIN</title>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
     <style>
-        :root { --primary: #0088cc; --bg: #0f172a; --text: #ffffff; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; overflow: hidden; }
-        #app { display: flex; flex-direction: column; height: 100vh; }
-        .page { display: none; flex: 1; padding: 20px; text-align: center; overflow-y: auto; }
-        .active { display: block; }
+        :root {
+            --bg: #0f172a; --panel: #1e293b; --text: #f8fafc;
+            --accent: #3b82f6; --accent-hover: #2563eb;
+            --gold: #fbbf24; --danger: #ef4444;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+        body { background-color: var(--bg); color: var(--text); overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
         
-        /* Game UI */
-        .coin { width: 200px; height: 200px; background: radial-gradient(#ffd700, #b8860b); border-radius: 50%; margin: 30px auto; border: 8px solid #facc15; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 50px; transition: transform 0.1s; box-shadow: 0 0 20px rgba(250, 204, 21, 0.5); }
+        /* App Layout */
+        header { padding: 15px; text-align: center; background: var(--panel); box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        .season-timer { font-size: 0.9em; color: var(--gold); margin-top: 5px; }
+        
+        main { flex: 1; overflow-y: auto; padding: 20px; position: relative; }
+        .page { display: none; height: 100%; flex-direction: column; align-items: center; }
+        .page.active { display: flex; }
+
+        /* Main Game Screen */
+        .score-display { font-size: 2.5em; font-weight: bold; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        
+        .coin { width: 200px; height: 200px; background: radial-gradient(circle, #fbbf24 0%, #b45309 100%); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 3em; font-weight: bold; cursor: pointer; box-shadow: 0 10px 30px rgba(251, 191, 36, 0.4); transition: transform 0.1s; border: 5px solid #fef3c7; }
         .coin:active { transform: scale(0.95); }
-        .stats { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
-        .energy-bar { width: 100%; height: 20px; background: #334155; border-radius: 10px; margin: 10px 0; overflow: hidden; }
-        .energy-fill { height: 100%; background: #22c55e; width: 100%; transition: width 0.3s; }
+        .coin.booster-active { border-color: #ef4444; box-shadow: 0 10px 50px rgba(239, 68, 68, 0.6); animation: pulse 1s infinite; }
+
+        .status-bars { width: 100%; max-width: 300px; margin-top: 40px; }
+        .energy-bar-container { background: var(--panel); border-radius: 10px; height: 20px; overflow: hidden; position: relative; }
+        .energy-bar { background: var(--accent); height: 100%; width: 100%; transition: width 0.2s; }
+        .energy-text { position: absolute; width: 100%; text-align: center; top: 0; font-size: 0.8em; line-height: 20px; }
         
-        /* Nav */
-        nav { display: flex; background: #1e293b; padding: 10px; justify-content: space-around; }
-        nav button { background: none; border: none; color: white; font-weight: bold; }
+        .cooldown-text { color: var(--danger); font-size: 0.9em; margin-top: 10px; text-align: center; display: none; }
+
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        button { background: var(--panel); border: 2px solid var(--accent); color: white; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        button:hover { background: var(--accent); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Leaderboard */
+        .lb-list { width: 100%; max-width: 400px; background: var(--panel); border-radius: 10px; padding: 10px; overflow-y: auto; flex: 1; }
+        .lb-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #334155; }
+        .lb-item:last-child { border-bottom: none; }
+        .lb-item.me { background: var(--accent); border-radius: 5px; }
+
+        /* Referrals */
+        .ref-box { background: var(--panel); padding: 20px; border-radius: 10px; text-align: center; max-width: 400px; }
+        .ref-link { background: #000; padding: 10px; border-radius: 5px; word-break: break-all; margin: 15px 0; color: var(--gold); }
+
+        /* Navigation */
+        nav { display: flex; background: var(--panel); padding: 10px; justify-content: space-around; box-shadow: 0 -2px 10px rgba(0,0,0,0.5); }
+        .nav-btn { background: none; border: none; color: #94a3b8; font-size: 1.2em; display: flex; flex-direction: column; align-items: center; }
+        .nav-btn.active { color: var(--accent); }
+
+        /* Modals */
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 100; }
+        .modal-content { background: var(--panel); padding: 20px; border-radius: 10px; text-align: center; max-width: 300px; }
         
-        .timer { font-size: 14px; color: #94a3b8; }
-        .booster-active { border: 2px solid #ef4444; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
     </style>
 </head>
 <body>
 
-<div id="app">
-    <div id="main" class="page active">
-        <div class="timer" id="seasonTimer">Season Ends: 0d 0h 0m</div>
-        <h1 id="scoreDisplay">0</h1>
-        <div class="coin" id="clicker">💰</div>
-        <div class="energy-bar"><div id="energyFill" class="energy-fill"></div></div>
-        <p>Energy: <span id="energyText">500</span>/500</p>
-        <div id="refillTimer" class="timer"></div>
-        <br>
-        <button onclick="activateBooster()" style="padding:10px; background:#e11d48; color:white; border-radius:5px; border:none;">🚀 10x Booster (Watch Ads)</button>
-    </div>
+    <header>
+        <h2>MOBA COIN</h2>
+        <div class="season-timer" id="seasonTimer">Season Ends: Loading...</div>
+    </header>
 
-    <div id="leaderboard" class="page">
-        <h2>Global Top 100</h2>
-        <div id="rankDisplay" style="margin-bottom:15px; color:#38bdf8;">Your Rank: Loading...</div>
-        <table style="width:100%; text-align: left;" id="leaderboardTable">
-            </table>
-    </div>
+    <main>
+        <div id="page-main" class="page active">
+            <div class="score-display">
+                🪙 <span id="scoreVal">0</span>
+            </div>
+            
+            <div class="coin" id="coinBtn">M</div>
+            
+            <div class="status-bars">
+                <div class="energy-bar-container">
+                    <div class="energy-bar" id="energyBar"></div>
+                    <div class="energy-text"><span id="energyVal">500</span> / 500</div>
+                </div>
+                <div class="cooldown-text" id="cooldownText">Refill in: 30:00</div>
+            </div>
 
-    <div id="referral" class="page">
-        <h2>Invite Friends</h2>
-        <p>Get +10,000 per active friend!</p>
-        <div style="background:#1e293b; padding:15px; border-radius:10px;">
-            <code id="refLink">t.me/MobaCoinBot?start=id123</code>
+            <div class="btn-group">
+                <button id="btnAdEnergy">Watch Ad (+100 Energy)</button>
+                <button id="btnAdBooster">Watch Ad (10x Boost for 10s)</button>
+            </div>
         </div>
-        <p style="font-size:12px; color:#94a3b8;">*Friend must earn 1,000 points this season to qualify.</p>
-    </div>
+
+        <div id="page-lb" class="page">
+            <h3>Top 100 Players</h3>
+            <p style="margin: 10px 0;">Your Rank: <span id="myRank" style="color:var(--gold)">Unranked</span></p>
+            <div class="lb-list" id="lbList">Loading...</div>
+        </div>
+
+        <div id="page-ref" class="page">
+            <div class="ref-box">
+                <h3>Invite Friends</h3>
+                <p style="margin-top:10px; font-size:0.9em;">Get <b>10,000 Points</b> when your friend reaches 1,000 points this season!</p>
+                <div class="ref-link" id="refLink">Loading...</div>
+                <button onclick="copyRefLink()">Copy Link</button>
+            </div>
+        </div>
+    </main>
 
     <nav>
-        <button onclick="showPage('main')">GAME</button>
-        <button onclick="showPage('leaderboard')">RANK</button>
-        <button onclick="showPage('referral')">FRIENDS</button>
+        <button class="nav-btn active" onclick="nav('page-main')">🏠<br><small>Home</small></button>
+        <button class="nav-btn" onclick="nav('page-lb')">🏆<br><small>Rank</small></button>
+        <button class="nav-btn" onclick="nav('page-ref')">👥<br><small>Frens</small></button>
     </nav>
-</div>
 
-<script>
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
+    <div id="adModal" class="modal">
+        <div class="modal-content">
+            <h3>Watching Ad...</h3>
+            <p>Simulating ad network view.</p>
+            <h2 id="adCountdown">3</h2>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+        import { getDatabase, ref, onValue, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-functions.js";
+
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
   apiKey: "AIzaSyAK315b3-j5RrIvx0vH2OE_mdd86Zbd8Wc",
   authDomain: "test-6f668.firebaseapp.com",
   databaseURL: "https://test-6f668-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -79,108 +139,270 @@ const firebaseConfig = {
   appId: "1:1070554867228:web:8f4abf585baa1d82f5e1d9",
   measurementId: "G-7XZ8F2FD5K"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const tg = window.Telegram.WebApp;
-tg.expand();
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const functions = getFunctions(app);
 
-// --- GAME STATE ---
-let user = {
-    id: tg.initDataUnsafe.user?.id || "guest_user",
-    name: tg.initDataUnsafe.user?.first_name || "Guest",
-    points: 0,
-    energy: 500,
-    lastClick: 0
-};
-let isBoosterActive = false;
-let refillStartTime = null;
+        // Telegram Setup
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        const initData = tg.initData || "";
+        const initDataUnsafe = tg.initDataUnsafe || {};
+        const userId = initDataUnsafe.user ? initDataUnsafe.user.id.toString() : "12345"; // fallback for testing
+        const userName = initDataUnsafe.user ? initDataUnsafe.user.first_name : "Test User";
+        const startParam = initDataUnsafe.start_param || null; // For referrals
 
-// --- CORE LOGIC ---
-function clickCoin() {
-    const now = Date.now();
-    if (now - user.lastClick < 50) return; // Simple Anti-bot
-    if (user.energy <= 0) {
-        alert("Out of energy! Wait for refill or watch ads.");
-        return;
-    }
+        // Game State Variables
+        let points = 0;
+        let energy = 500;
+        let refillTimerStart = null;
+        let boosterEnd = 0;
+        let pendingClicks = 0;
+        let isSyncing = false;
 
-    let gain = isBoosterActive ? 10 : 1;
-    user.points += gain;
-    user.energy -= 1;
-    user.lastClick = now;
-    
-    updateUI();
-    saveData();
-    
-    if (user.energy === 0) startRefillTimer();
-}
+        // UI Elements
+        const scoreEl = document.getElementById('scoreVal');
+        const energyBar = document.getElementById('energyBar');
+        const energyVal = document.getElementById('energyVal');
+        const coinBtn = document.getElementById('coinBtn');
+        const cooldownText = document.getElementById('cooldownText');
+        const seasonTimerEl = document.getElementById('seasonTimer');
 
-function startRefillTimer() {
-    refillStartTime = Date.now() + (30 * 60 * 1000); // 30 mins
-    const interval = setInterval(() => {
-        const remaining = refillStartTime - Date.now();
-        if (remaining <= 0) {
-            user.energy = 500;
-            clearInterval(interval);
-            document.getElementById('refillTimer').innerText = "";
+        // Callable Cloud Functions
+        const syncDataFn = httpsCallable(functions, 'syncData');
+        const rewardAdEnergyFn = httpsCallable(functions, 'rewardAdEnergy');
+        const activateBoosterFn = httpsCallable(functions, 'activateBooster');
+
+        // --- MAIN GAME LOGIC ---
+
+        function updateUI() {
+            scoreEl.innerText = points.toLocaleString();
+            energyVal.innerText = energy;
+            energyBar.style.width = `${(energy / 500) * 100}%`;
+
+            const now = Date.now();
+            
+            // Booster UI logic
+            if (boosterEnd > now) {
+                coinBtn.classList.add('booster-active');
+                coinBtn.innerText = "M (x10)";
+            } else {
+                coinBtn.classList.remove('booster-active');
+                coinBtn.innerText = "M";
+            }
+
+            // Refill Timer UI logic
+            if (energy === 0 && refillTimerStart) {
+                const elapsed = now - refillTimerStart;
+                const remaining = 1800000 - elapsed; // 30 mins
+                
+                if (remaining > 0) {
+                    cooldownText.style.display = 'block';
+                    const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+                    const secs = Math.floor((remaining % (1000 * 60)) / 1000);
+                    cooldownText.innerText = `Refill in: ${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                    coinBtn.style.opacity = '0.5';
+                } else {
+                    // Timer finished, do local predictive refill
+                    energy = 500;
+                    refillTimerStart = null;
+                    cooldownText.style.display = 'none';
+                    coinBtn.style.opacity = '1';
+                }
+            } else {
+                cooldownText.style.display = 'none';
+                coinBtn.style.opacity = '1';
+            }
+        }
+
+        // Tap Event
+        coinBtn.addEventListener('click', (e) => {
+            if (energy <= 0) {
+                // Shake effect if zero energy
+                tg.HapticFeedback.notificationOccurred('error');
+                return;
+            }
+
+            tg.HapticFeedback.impactOccurred('medium');
+            
+            // Local prediction
+            energy--;
+            pendingClicks++;
+            const isBoosted = Date.now() < boosterEnd;
+            points += isBoosted ? 10 : 1;
+
+            if (energy === 0) refillTimerStart = Date.now();
+
             updateUI();
-        } else {
-            document.getElementById('refillTimer').innerText = `Refill in: ${Math.floor(remaining/1000)}s`;
-        }
-    }, 1000);
-}
-
-function activateBooster() {
-    // Simulate Ads Call
-    tg.showConfirm("Watch an ad to get 10x multiplier for 10 seconds?", (ok) => {
-        if(ok) {
-            isBoosterActive = true;
-            document.getElementById('clicker').classList.add('booster-active');
-            setTimeout(() => {
-                isBoosterActive = false;
-                document.getElementById('clicker').classList.remove('booster-active');
-            }, 10000);
-        }
-    });
-}
-
-// --- DATABASE SYNC ---
-function saveData() {
-    db.ref('users/' + user.id).update({
-        points: user.points,
-        name: user.name
-    });
-}
-
-function loadLeaderboard() {
-    db.ref('users').orderByChild('points').limitToLast(100).on('value', snap => {
-        const list = [];
-        snap.forEach(child => { list.push(child.val()); });
-        list.reverse();
-        
-        let html = '';
-        list.forEach((u, i) => {
-            html += `<tr><td>#${i+1}</td><td>${u.name}</td><td>${u.points}</td></tr>`;
+            
+            // Floating text animation
+            showFloatingText(e.clientX, e.clientY, isBoosted ? "+10" : "+1");
         });
-        document.getElementById('leaderboardTable').innerHTML = html;
-    });
-}
 
-// --- UI ROUTING ---
-function showPage(pageId) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById(pageId).classList.add('active');
-    if(pageId === 'leaderboard') loadLeaderboard();
-}
+        // Sync with Cloud Functions every 2 seconds
+        setInterval(async () => {
+            if (pendingClicks > 0 && !isSyncing) {
+                isSyncing = true;
+                const clicksToSync = pendingClicks;
+                pendingClicks = 0;
 
-function updateUI() {
-    document.getElementById('scoreDisplay').innerText = user.points;
-    document.getElementById('energyText').innerText = user.energy;
-    document.getElementById('energyFill').style.width = (user.energy / 500 * 100) + "%";
-}
+                try {
+                    const result = await syncDataFn({ 
+                        initData, 
+                        clicks: clicksToSync,
+                        referrerId: startParam 
+                    });
+                    
+                    // Update local state with server truth
+                    const data = result.data;
+                    points = data.points;
+                    energy = data.energy;
+                    refillTimerStart = data.refillTimerStart;
+                    boosterEnd = data.boosterEnd;
+                } catch (err) {
+                    console.error("Sync error", err);
+                    pendingClicks += clicksToSync; // restore clicks if failed
+                }
+                isSyncing = false;
+                updateUI();
+            }
+        }, 2000);
 
-document.getElementById('clicker').addEventListener('pointerdown', clickCoin);
-updateUI();
-</script>
+        // Update loop for timers
+        setInterval(updateUI, 1000);
+
+        // --- AD INTEGRATION (MOCKED) ---
+        
+        function mockShowAd(callback) {
+            const modal = document.getElementById('adModal');
+            const counter = document.getElementById('adCountdown');
+            modal.style.display = 'flex';
+            let left = 3;
+            counter.innerText = left;
+            
+            let id = setInterval(() => {
+                left--;
+                counter.innerText = left;
+                if (left <= 0) {
+                    clearInterval(id);
+                    modal.style.display = 'none';
+                    callback();
+                }
+            }, 1000);
+        }
+
+        document.getElementById('btnAdEnergy').addEventListener('click', () => {
+            mockShowAd(async () => {
+                // Call cloud function to officially grant energy
+                const res = await rewardAdEnergyFn({ initData });
+                energy = res.data.energy;
+                refillTimerStart = null;
+                updateUI();
+                tg.showAlert("You received +100 Energy!");
+            });
+        });
+
+        document.getElementById('btnAdBooster').addEventListener('click', () => {
+            mockShowAd(async () => {
+                const res = await activateBoosterFn({ initData });
+                boosterEnd = res.data.boosterEnd;
+                updateUI();
+                tg.showAlert("10x Booster Activated for 10 seconds!");
+            });
+        });
+
+        // --- LEADERBOARD LOGIC ---
+        const lbQuery = query(ref(db, 'users'), orderByChild('points'), limitToLast(100));
+        onValue(lbQuery, (snapshot) => {
+            const listEl = document.getElementById('lbList');
+            listEl.innerHTML = '';
+            let rank = 1;
+            let foundMe = false;
+            
+            // Firebase limits push to ascending, we need descending
+            let players = [];
+            snapshot.forEach(child => {
+                players.push({ id: child.key, points: child.val().points });
+            });
+            players.reverse();
+
+            players.forEach(p => {
+                if (p.id === userId) { foundMe = true; document.getElementById('myRank').innerText = `#${rank}`; }
+                listEl.innerHTML += `
+                    <div class="lb-item ${p.id === userId ? 'me' : ''}">
+                        <span>#${rank} ${p.id === userId ? '(You)' : 'User_'+p.id.slice(0,4)}</span>
+                        <span>🪙 ${p.points.toLocaleString()}</span>
+                    </div>`;
+                rank++;
+            });
+
+            if (!foundMe) document.getElementById('myRank').innerText = `100+`;
+        });
+
+        // --- SEASON TIMER LOGIC ---
+        onValue(ref(db, 'system/season'), (snapshot) => {
+            const data = snapshot.val();
+            if (data && data.endTime) {
+                setInterval(() => {
+                    const remaining = data.endTime - Date.now();
+                    if (remaining > 0) {
+                        const d = Math.floor(remaining / (1000 * 60 * 60 * 24));
+                        const h = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        seasonTimerEl.innerText = `Season Ends in: ${d}d ${h}h`;
+                    } else {
+                        seasonTimerEl.innerText = "Season Resetting...";
+                    }
+                }, 60000); // update every minute
+            }
+        });
+
+        // --- REFERRAL LOGIC ---
+        // Setup referral link using Telegram deep linking format
+        const botUsername = "YOUR_TELEGRAM_BOT_USERNAME"; // e.g. MobaCoinBot
+        const refLink = `https://t.me/${botUsername}?startapp=${userId}`;
+        document.getElementById('refLink').innerText = refLink;
+
+        window.copyRefLink = () => {
+            navigator.clipboard.writeText(refLink);
+            tg.showAlert("Referral link copied!");
+        };
+
+        // --- UI UTILS ---
+        window.nav = (pageId) => {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            event.currentTarget.classList.add('active');
+        };
+
+        function showFloatingText(x, y, text) {
+            const el = document.createElement('div');
+            el.innerText = text;
+            el.style.position = 'fixed';
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            el.style.color = '#fbbf24';
+            el.style.fontWeight = 'bold';
+            el.style.fontSize = '24px';
+            el.style.pointerEvents = 'none';
+            el.style.transition = 'all 0.8s ease-out';
+            document.body.appendChild(el);
+
+            setTimeout(() => {
+                el.style.top = (y - 100) + 'px';
+                el.style.opacity = '0';
+            }, 50);
+
+            setTimeout(() => el.remove(), 800);
+        }
+        
+        // Initial Fetch
+        syncDataFn({ initData, clicks: 0, referrerId: startParam }).then(res => {
+            points = res.data.points; energy = res.data.energy; 
+            refillTimerStart = res.data.refillTimerStart; boosterEnd = res.data.boosterEnd;
+            updateUI();
+        });
+
+    </script>
 </body>
 </html>
