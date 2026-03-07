@@ -1,98 +1,80 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RichAds Test Mini App</title>
-    
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
-    <script>
-        // Initialize the Ads Controller
-        window.TelegramAdsController = new TelegramAdsController();
-        window.TelegramAdsController.initialize({
-            pubId: "1004311",
-            appId: "6445",
-        });
-    </script>
+<title>RichAds Telegram Test</title>
 
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #222222);
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-        }
+<!-- Telegram WebApp -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-        .content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 20px;
-        }
+<!-- RichAds Script -->
+<script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
 
-        .status-card {
-            background: var(--tg-theme-secondary-bg-color, #f4f4f5);
-            padding: 15px;
-            border-radius: 12px;
-            border: 1px solid #ddd;
-            width: 80%;
-        }
+<script>
+document.addEventListener("DOMContentLoaded", function() {
 
-        /* Simulating a bottom-anchored placement area */
-        .ad-tester-area {
-            padding: 10px;
-            background: #f9f9f9;
-            border-top: 1px dashed #ccc;
-            font-size: 12px;
-            color: #888;
-        }
+  const tg = window.Telegram.WebApp;
+  tg.expand();
 
-        button {
-            background-color: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-top: 15px;
-        }
-    </style>
+  window.TelegramAdsController = new TelegramAdsController();
+
+  window.TelegramAdsController.initialize({
+    pubId: "1004311",
+    appId: "6445",
+  });
+
+});
+
+function showAd(){
+  if(window.TelegramAdsController){
+      window.TelegramAdsController.showAd()
+      .then(() => {
+          alert("Ad watched successfully!");
+      })
+      .catch(() => {
+          alert("Ad not available or failed.");
+      });
+  }else{
+      alert("Ads controller not ready");
+  }
+}
+</script>
+
+<style>
+body{
+  margin:0;
+  font-family:sans-serif;
+  background:#111;
+  color:white;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+
+#btn{
+  position:fixed;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  padding:15px 30px;
+  font-size:18px;
+  border:none;
+  border-radius:10px;
+  background:#00c853;
+  color:white;
+}
+</style>
+
 </head>
+
 <body>
 
-    <div class="content">
-        <div class="status-card">
-            <h3>RichAds Tester</h3>
-            <p id="status">Waiting for SDK...</p>
-            <button onclick="checkAds()">Trigger Ad Check</button>
-        </div>
-    </div>
+<h2>RichAds Telegram Mini App Test</h2>
 
-    <div class="ad-tester-area">
-        Ads should initialize and appear near the bottom
-    </div>
+<button id="btn" onclick="showAd()">Watch Ad</button>
 
-    <script>
-        // Notify Telegram that the Mini App is ready
-        window.Telegram.WebApp.ready();
-        window.Telegram.WebApp.expand();
-
-        document.getElementById('status').innerText = "SDK Initialized: ID 1004311";
-
-        function checkAds() {
-            // Check console for any RichAds internal logs
-            console.log("RichAds Controller:", window.TelegramAdsController);
-            alert("Checking for available ads...");
-        }
-    </script>
 </body>
 </html>
