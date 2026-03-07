@@ -1,62 +1,373 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MOBA COIN</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
-<title>Monetag Rewarded Ad Test</title>
+    <style>
+        :root {
+            --bg-color: #1e1e24;
+            --text-color: #f5f5f5;
+            --primary: #fca311;
+            --secondary: #14213d;
+        }
+        body {
+            margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color); color: var(--text-color);
+            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+            user-select: none;
+        }
+        .header {
+            text-align: center; padding: 15px; background: var(--secondary);
+            border-bottom: 2px solid var(--primary);
+        }
+        .season-timer { font-size: 0.8em; color: #aaa; margin-top: 5px; }
+        
+        /* Page Containers */
+        .page { display: none; flex: 1; overflow-y: auto; padding: 20px; text-align: center; }
+        .page.active { display: flex; flex-direction: column; align-items: center; }
 
-<!-- Telegram WebApp Script -->
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+        /* Main Game Elements */
+        .points-display { font-size: 2.5em; font-weight: bold; margin: 20px 0; color: var(--primary); }
+        .coin-btn {
+            width: 200px; height: 200px; border-radius: 50%; background: radial-gradient(circle, #ffd166, #fca311);
+            border: 10px solid #e5e5e5; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            cursor: pointer; transition: transform 0.1s; margin: 20px auto;
+        }
+        .coin-btn:active { transform: scale(0.95); }
+        
+        .energy-bar { width: 100%; max-width: 300px; background: #333; border-radius: 10px; margin: 10px 0; overflow: hidden; }
+        .energy-fill { height: 20px; background: #06d6a0; width: 100%; transition: width 0.2s; }
+        .energy-text { margin-bottom: 15px; font-size: 0.9em; }
 
-<!-- Monetag SDK -->
-<script src='//libtl.com/sdk.js' data-zone='10688536' data-sdk='show_10688536'></script>
+        .btn {
+            background: var(--primary); color: #000; border: none; padding: 12px 20px;
+            border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; max-width: 300px;
+            margin: 10px 0;
+        }
+        .btn:disabled { background: #555; cursor: not-allowed; }
 
-<style>
-body{
-font-family: Arial;
-text-align:center;
-background:#0f172a;
-color:white;
-padding-top:120px;
-}
+        /* Bottom Navigation */
+        .nav {
+            display: flex; justify-content: space-around; background: var(--secondary);
+            padding: 15px 0; border-top: 2px solid #333;
+        }
+        .nav-item { cursor: pointer; color: #aaa; font-weight: bold; padding: 10px; }
+        .nav-item.active { color: var(--primary); }
 
-button{
-padding:16px 35px;
-font-size:18px;
-border:none;
-border-radius:10px;
-background:#22c55e;
-color:white;
-cursor:pointer;
-}
-</style>
-
+        /* Leaderboard & Referral */
+        .list-item {
+            background: #2a2a35; padding: 15px; margin: 5px 0; border-radius: 8px;
+            display: flex; justify-content: space-between; width: 100%; max-width: 350px;
+        }
+        .ref-box { background: #2a2a35; padding: 20px; border-radius: 10px; margin-top: 20px; }
+        input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; }
+    </style>
 </head>
-
 <body>
 
-<h2>Monetag Rewarded Ad Test</h2>
+    <div class="header">
+        <h2>MOBA COIN</h2>
+        <div class="season-timer" id="seasonTimer">Season Ends in: Loading...</div>
+    </div>
 
-<button onclick="showAd()">Watch Ad</button>
+    <div id="mainPage" class="page active">
+        <div class="points-display"><span id="pointCount">0</span></div>
+        
+        <div class="coin-btn" id="coinBtn"></div>
 
-<script>
+        <div class="energy-text">Energy: <span id="energyCount">500</span> / 500</div>
+        <div class="energy-bar"><div class="energy-fill" id="energyFill"></div></div>
+        
+        <div id="energyTimer" style="display: none; color: #ef476f; margin-bottom: 10px;">Refill in: <span id="refillCount">30:00</span></div>
+        <button class="btn" id="adEnergyBtn" style="display: none;">Watch Ad for +100 Energy</button>
 
-function showAd(){
+        <button class="btn" id="boosterBtn">Watch Ad for 10x Booster (10s)</button>
+        <div id="boosterStatus" style="color: #06d6a0; display: none;">10X BOOSTER ACTIVE: <span id="boosterTimer">10</span>s</div>
+    </div>
 
-show_10688536().then(() => {
+    <div id="leaderboardPage" class="page">
+        <h3>Top 100 Players</h3>
+        <div class="list-item" style="background: var(--primary); color: #000;">
+            <span>Your Rank: <b id="myRank">...</b></span>
+            <span><b id="myLeaderboardPoints">0</b> pts</span>
+        </div>
+        <div id="leaderboardList" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+            </div>
+    </div>
 
-alert("You have seen an ad! Reward user here.");
+    <div id="referralPage" class="page">
+        <h3>Invite Friends</h3>
+        <p>Get <b>+10,000 Points</b> when your friend reaches 1,000 points this season!</p>
+        <div class="ref-box">
+            <p>Your Referral Link:</p>
+            <input type="text" id="refLink" readonly>
+            <button class="btn" onclick="copyRefLink()">Copy Link</button>
+        </div>
+    </div>
 
-}).catch(() => {
+    <div class="nav">
+        <div class="nav-item active" onclick="switchTab('main')">Main</div>
+        <div class="nav-item" onclick="switchTab('leaderboard')">Leaderboard</div>
+        <div class="nav-item" onclick="switchTab('referral')">Referral</div>
+    </div>
 
-alert("Ad failed or skipped");
+    <script>
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAK315b3-j5RrIvx0vH2OE_mdd86Zbd8Wc",
+  authDomain: "test-6f668.firebaseapp.com",
+  databaseURL: "https://test-6f668-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "test-6f668",
+  storageBucket: "test-6f668.firebasestorage.app",
+  messagingSenderId: "1070554867228",
+  appId: "1:1070554867228:web:8f4abf585baa1d82f5e1d9",
+  measurementId: "G-7XZ8F2FD5K"
+};
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-});
+        // 2. TELEGRAM USER DATA
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        // Fallback for local testing if not in Telegram
+        const user = tg.initDataUnsafe?.user || { id: "test_user_1", first_name: "Test" };
+        const startParam = tg.initDataUnsafe?.start_param || null; // captures "ref_USERID"
 
-}
+        // 3. GAME STATE
+        let points = 0;
+        let energy = 500;
+        const maxEnergy = 500;
+        let boosterActive = false;
+        let refillInterval = null;
+        let refillTimeLeft = 1800; // 30 mins in seconds
 
-</script>
+        const userRef = db.ref(`users/${user.id}`);
+        const seasonRef = db.ref('season/endTime');
 
+        // 4. LOAD DATA & INIT
+        async function initGame() {
+            // Check Referral Start Param
+            let referredBy = null;
+            if (startParam && startParam.startsWith('ref_') && startParam !== `ref_${user.id}`) {
+                referredBy = startParam.split('_')[1];
+            }
+
+            // Sync with Firebase
+            userRef.on('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    points = data.points || 0;
+                    document.getElementById('pointCount').innerText = points.toLocaleString();
+                    document.getElementById('myLeaderboardPoints').innerText = points.toLocaleString();
+                } else {
+                    // First time user setup
+                    userRef.set({
+                        points: 0,
+                        name: user.first_name,
+                        referredBy: referredBy,
+                        referralBonusGranted: false
+                    });
+                }
+            });
+
+            // Sync Season Timer
+            seasonRef.on('value', (snap) => {
+                if(snap.exists()){
+                    startSeasonTimer(snap.val());
+                }
+            });
+
+            updateEnergyUI();
+            generateRefLink();
+        }
+
+        // 5. CLICK MECHANICS
+        document.getElementById('coinBtn').addEventListener('pointerdown', () => {
+            if (energy > 0) {
+                const clickValue = boosterActive ? 10 : 1;
+                points += clickValue;
+                energy -= 1;
+                
+                // Optimistic UI Update
+                document.getElementById('pointCount').innerText = points.toLocaleString();
+                updateEnergyUI();
+
+                // Save to DB (debounced/batched in a production app, direct for simplicity here)
+                userRef.update({ points: points });
+
+                // Check Energy Depletion
+                if (energy <= 0) startRefillTimer();
+            } else {
+                tg.HapticFeedback.notificationOccurred('error');
+            }
+        });
+
+        // 6. ENERGY & TIMERS
+        function updateEnergyUI() {
+            document.getElementById('energyCount').innerText = energy;
+            document.getElementById('energyFill').style.width = `${(energy / maxEnergy) * 100}%`;
+        }
+
+        function startRefillTimer() {
+            if (refillInterval) return;
+            document.getElementById('energyTimer').style.display = 'block';
+            document.getElementById('adEnergyBtn').style.display = 'block';
+            
+            refillTimeLeft = 1800;
+            
+            refillInterval = setInterval(() => {
+                refillTimeLeft--;
+                let m = Math.floor(refillTimeLeft / 60);
+                let s = refillTimeLeft % 60;
+                document.getElementById('refillCount').innerText = `${m}:${s < 10 ? '0':''}${s}`;
+
+                if (refillTimeLeft <= 0) {
+                    clearInterval(refillInterval);
+                    refillInterval = null;
+                    energy = maxEnergy;
+                    document.getElementById('energyTimer').style.display = 'none';
+                    document.getElementById('adEnergyBtn').style.display = 'none';
+                    updateEnergyUI();
+                }
+            }, 1000);
+        }
+
+        function cancelRefillTimer() {
+            if(refillInterval) {
+                clearInterval(refillInterval);
+                refillInterval = null;
+                document.getElementById('energyTimer').style.display = 'none';
+                document.getElementById('adEnergyBtn').style.display = 'none';
+            }
+        }
+
+        // 7. ADS MOCK SYSTEM (Connect your Ad network APIs here)
+        function showAd(callback) {
+            // Mocking ad view delay
+            const btn = document.activeElement;
+            const originalText = btn.innerText;
+            btn.innerText = "Showing Ad...";
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.disabled = false;
+                callback();
+            }, 2000);
+        }
+
+        document.getElementById('adEnergyBtn').addEventListener('click', () => {
+            showAd(() => {
+                energy += 100;
+                if (energy > maxEnergy) energy = maxEnergy;
+                updateEnergyUI();
+                cancelRefillTimer();
+                // If it hits 0 again, the click logic will restart the timer
+            });
+        });
+
+        document.getElementById('boosterBtn').addEventListener('click', () => {
+            showAd(() => {
+                boosterActive = true;
+                document.getElementById('boosterBtn').style.display = 'none';
+                document.getElementById('boosterStatus').style.display = 'block';
+                
+                let bTime = 10;
+                document.getElementById('boosterTimer').innerText = bTime;
+                
+                let bInt = setInterval(() => {
+                    bTime--;
+                    document.getElementById('boosterTimer').innerText = bTime;
+                    if(bTime <= 0) {
+                        clearInterval(bInt);
+                        boosterActive = false;
+                        document.getElementById('boosterBtn').style.display = 'block';
+                        document.getElementById('boosterStatus').style.display = 'none';
+                    }
+                }, 1000);
+            });
+        });
+
+        // 8. SEASON TIMER
+        function startSeasonTimer(endTimeMs) {
+            setInterval(() => {
+                const now = Date.now();
+                const diff = endTimeMs - now;
+                if(diff > 0) {
+                    const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                    const m = Math.floor((diff / 1000 / 60) % 60);
+                    document.getElementById('seasonTimer').innerText = `Season Ends in: ${d}d ${h}h ${m}m`;
+                } else {
+                    document.getElementById('seasonTimer').innerText = `Season Ended. Resetting...`;
+                }
+            }, 60000);
+        }
+
+        // 9. LEADERBOARD SYSTEM
+        function loadLeaderboard() {
+            db.ref('users').orderByChild('points').limitToLast(100).once('value', (snapshot) => {
+                const list = [];
+                snapshot.forEach(child => {
+                    list.push({ id: child.key, ...child.val() });
+                });
+                
+                // Firebase returns ascending, we need descending
+                list.reverse();
+                
+                const lbDiv = document.getElementById('leaderboardList');
+                lbDiv.innerHTML = '';
+                
+                let myRank = "Unranked";
+                
+                list.forEach((u, index) => {
+                    if(u.id === user.id.toString()) myRank = index + 1;
+                    
+                    lbDiv.innerHTML += `
+                        <div class="list-item">
+                            <span>#${index + 1} ${u.name || 'Anonymous'}</span>
+                            <span><b>${u.points}</b></span>
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('myRank').innerText = `#${myRank}`;
+            });
+        }
+
+        // 10. REFERRAL SYSTEM
+        function generateRefLink() {
+            const botUsername = "YOUR_BOT_USERNAME"; // Replace with your actual bot username
+            const link = `https://t.me/${botUsername}?start=ref_${user.id}`;
+            document.getElementById('refLink').value = link;
+        }
+
+        function copyRefLink() {
+            const copyText = document.getElementById("refLink");
+            copyText.select();
+            document.execCommand("copy");
+            tg.showAlert("Referral link copied!");
+        }
+
+        // 11. TAB NAVIGATION
+        function switchTab(tab) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            document.getElementById(`${tab}Page`).classList.add('active');
+            event.target.classList.add('active');
+
+            if(tab === 'leaderboard') loadLeaderboard();
+        }
+
+        // Start Game
+        initGame();
+    </script>
 </body>
 </html>
