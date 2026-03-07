@@ -4,61 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>RichAds Telegram Test</title>
+<title>RichAds Telegram Mini App Test</title>
 
-<!-- Telegram WebApp -->
+<!-- Telegram WebApp SDK -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-<!-- RichAds Script -->
+<!-- RichAds Telegram SDK -->
 <script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-
-  const tg = window.Telegram.WebApp;
-  tg.expand();
-
-  window.TelegramAdsController = new TelegramAdsController();
-
-  window.TelegramAdsController.initialize({
-    pubId: "1004311",
-    appId: "6445",
-  });
-
-});
-
-function showAd(){
-  if(window.TelegramAdsController){
-      window.TelegramAdsController.showAd()
-      .then(() => {
-          alert("Ad watched successfully!");
-      })
-      .catch(() => {
-          alert("Ad not available or failed.");
-      });
-  }else{
-      alert("Ads controller not ready");
-  }
-}
-</script>
 
 <style>
 body{
   margin:0;
-  font-family:sans-serif;
   background:#111;
   color:white;
+  font-family:Arial;
   display:flex;
   justify-content:center;
   align-items:center;
   height:100vh;
 }
 
-#btn{
+button{
   position:fixed;
-  bottom:20px;
-  left:50%;
-  transform:translateX(-50%);
+  bottom:25px;
   padding:15px 30px;
   font-size:18px;
   border:none;
@@ -68,13 +36,36 @@ body{
 }
 </style>
 
+<script>
+function loadAds(){
+
+  try{
+
+    window.TelegramAdsController = new TelegramAdsController();
+
+    window.TelegramAdsController.initialize({
+      pubId: "1004311",
+      appId: "6445"
+    });
+
+    alert("Ad request sent");
+
+  }catch(e){
+
+    alert("Ads failed: " + e);
+
+  }
+
+}
+</script>
+
 </head>
 
 <body>
 
 <h2>RichAds Telegram Mini App Test</h2>
 
-<button id="btn" onclick="showAd()">Watch Ad</button>
+<button onclick="loadAds()">Load Ad</button>
 
 </body>
 </html>
