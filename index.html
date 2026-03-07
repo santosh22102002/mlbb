@@ -2,69 +2,91 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adsgram Fix</title>
-    <script src="https://sad.adsgram.ai/js/sdk.js" id="adsgram-sdk"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TMA Ad Test</title>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script> <script src="https://js.onclckvd.com/in-stream-ad-admanager/tma.js"></script>
+
     <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #eceff1; }
-        .card { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); text-align: center; }
-        button { background: #0088cc; color: white; border: none; padding: 15px 30px; border-radius: 10px; font-size: 18px; cursor: pointer; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        #status { margin-top: 15px; color: #666; }
+        body {
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .card {
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            width: 100%;
+            max-width: 300px;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            font-weight: bold;
+            background-color: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        #status { font-size: 14px; margin-top: 10px; opacity: 0.7; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>Adsgram Task Test</h2>
-    <p>Block ID: <code>task-24531</code></p>
-    <button id="adBtn" onclick="showAd()">Loading SDK...</button>
-    <div id="status">Waiting for SDK...</div>
-</div>
+    <div class="card">
+        <h3>Ad Test</h3>
+        <p id="status">Initializing SDK...</p>
+        <button id="adBtn">Play Rewarded Ad</button>
+    </div>
 
-<script>
-    let AdController = null;
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand(); // Make the app full height
 
-    // Wait for the window to load to ensure the script is parsed
-    window.onload = function() {
+        const statusEl = document.getElementById('status');
         const btn = document.getElementById('adBtn');
-        const status = document.getElementById('status');
 
-        if (window.Adsgram) {
-            // 2. Initialize it immediately so it's ready for the click
-            AdController = window.Adsgram.init({ 
-                blockId: "task-24531",
-                debug: true // Keep true for testing
-            });
-            btn.innerText = "Show Task Ad";
-            status.innerText = "SDK Ready ✅";
-        } else {
-            status.innerText = "❌ SDK failed to load. Check your internet or HTTPS.";
-            btn.disabled = true;
-        }
-    };
-
-    function showAd() {
-        if (!AdController) {
-            alert("AdController not initialized yet!");
-            return;
-        }
-
-        const status = document.getElementById('status');
-        status.innerText = "Opening Ad...";
-
-        AdController.show()
-            .then((result) => {
-                status.innerText = "✅ Completed! User rewarded.";
-                status.style.color = "green";
+        // Initialize Onclicka (REPLACE WITH YOUR ID)
+        window.initCdTma?.({ id: 'Your Spot ID' })
+            .then(show => {
+                window.show = show;
+                statusEl.innerText = "Ready to play!";
             })
-            .catch((result) => {
-                status.innerText = `❌ Error: ${result.description}`;
-                status.style.color = "red";
-                console.error("Adsgram Error:", result);
+            .catch(err => {
+                statusEl.innerText = "Init Error (Check Console)";
+                console.error(err);
             });
-    }
-</script>
 
+        btn.onclick = () => {
+            if (window.show) {
+                statusEl.innerText = "Loading Ad...";
+                window.show()
+                    .then(() => {
+                        statusEl.innerText = "Success! Ad watched.";
+                        tg.HapticFeedback.notificationOccurred('success');
+                    })
+                    .catch(err => {
+                        statusEl.innerText = "Ad skipped/failed.";
+                        console.log("Ad Error:", err);
+                    });
+            } else {
+                tg.showAlert("SDK not initialized yet.");
+            }
+        };
+    </script>
 </body>
 </html>
