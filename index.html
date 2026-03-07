@@ -3,56 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adsgram Task Test</title>
-    <script src="https://sad.adsgram.ai/js/sdk.js"></script>
+    <title>Adsgram Fix</title>
+    <script src="https://sad.adsgram.ai/js/sdk.js" id="adsgram-sdk"></script>
     <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f4f4f9; margin: 0; }
-        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
-        button { background: #0088cc; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #0077b5; }
-        #status { margin-top: 20px; font-weight: bold; color: #555; }
-        .debug-label { margin-bottom: 10px; font-size: 12px; color: #888; }
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #eceff1; }
+        .card { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); text-align: center; }
+        button { background: #0088cc; color: white; border: none; padding: 15px 30px; border-radius: 10px; font-size: 18px; cursor: pointer; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #status { margin-top: 15px; color: #666; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>Adsgram Tester</h2>
-    <p>Testing Block ID: <strong>task-24531</strong></p>
-    
-    <div class="debug-label">
-        <input type="checkbox" id="debugMode" checked> Enable Debug Mode
-    </div>
-
-    <button onclick="showAd()">Show Task Ad</button>
-    <div id="status">Ready...</div>
+    <h2>Adsgram Task Test</h2>
+    <p>Block ID: <code>task-24531</code></p>
+    <button id="adBtn" onclick="showAd()">Loading SDK...</button>
+    <div id="status">Waiting for SDK...</div>
 </div>
 
 <script>
-    function showAd() {
+    let AdController = null;
+
+    // Wait for the window to load to ensure the script is parsed
+    window.onload = function() {
+        const btn = document.getElementById('adBtn');
         const status = document.getElementById('status');
-        const isDebug = document.getElementById('debugMode').checked;
-        
-        status.innerText = "Loading ad...";
 
-        // 2. Initialize the Ad Controller
-        const AdController = window.Adsgram.init({ 
-            blockId: "task-24531",
-            debug: isDebug 
-        });
+        if (window.Adsgram) {
+            // 2. Initialize it immediately so it's ready for the click
+            AdController = window.Adsgram.init({ 
+                blockId: "task-24531",
+                debug: true // Keep true for testing
+            });
+            btn.innerText = "Show Task Ad";
+            status.innerText = "SDK Ready ✅";
+        } else {
+            status.innerText = "❌ SDK failed to load. Check your internet or HTTPS.";
+            btn.disabled = true;
+        }
+    };
 
-        // 3. Show the Ad
-        AdController.show().then((result) => {
-            // User finished watching or completed task
-            status.innerText = "✅ Success: Reward the user!";
-            status.style.color = "green";
-            console.log("Ad result:", result);
-        }).catch((result) => {
-            // Ad was closed early, error, or no banner found
-            status.innerText = `❌ Failed: ${result.error || result.description}`;
-            status.style.color = "red";
-            console.error("Ad error:", result);
-        });
+    function showAd() {
+        if (!AdController) {
+            alert("AdController not initialized yet!");
+            return;
+        }
+
+        const status = document.getElementById('status');
+        status.innerText = "Opening Ad...";
+
+        AdController.show()
+            .then((result) => {
+                status.innerText = "✅ Completed! User rewarded.";
+                status.style.color = "green";
+            })
+            .catch((result) => {
+                status.innerText = `❌ Error: ${result.description}`;
+                status.style.color = "red";
+                console.error("Adsgram Error:", result);
+            });
     }
 </script>
 
