@@ -3,143 +3,689 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Onclicka TMA Ad Test</title>
-
+    <title>CryptoPlay Mini Game</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>
-
-    <script src="https://js.onclckvd.com/in-stream-ad-admanager/tma.js"></script>
-
     <style>
         :root {
-            --bg: var(--tg-theme-bg-color, #ffffff);
-            --text: var(--tg-theme-text-color, #222222);
-            --hint: var(--tg-theme-hint-color, #999999);
-            --btn: var(--tg-theme-button-color, #2481cc);
-            --btn-text: var(--tg-theme-button-text-color, #ffffff);
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --primary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-radius: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            background-color: var(--bg);
-            color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow: hidden; 
+        }
+
+        /* App Container Layout */
+        #app {
             display: flex;
-            align-items: center;
-            justify-content: center;
+            flex-direction: column;
             height: 100vh;
-            text-align: center;
+            max-width: 480px;
+            margin: 0 auto;
+            background-color: var(--bg-color);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            position: relative;
         }
 
-        .container {
+        /* Header (Wallet Info) */
+        header {
             padding: 20px;
-            width: 90%;
-            max-width: 400px;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #334155;
+            z-index: 10;
         }
+        .balance-pill { background: rgba(255,255,255,0.05); padding: 8px 16px; border-radius: 20px; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+        .balance-pill.rupee { color: var(--success); }
+        .balance-pill.ticket { color: var(--primary); }
 
-        .status-box {
-            margin-bottom: 20px;
-            padding: 10px;
-            font-size: 14px;
-            border-radius: 8px;
-            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            border: 1px solid #ddd;
-        }
+        /* Screens */
+        #screens-container { flex: 1; overflow-y: auto; position: relative; }
+        .screen { display: none; padding: 20px; animation: fadeIn 0.2s ease-out; }
+        .screen.active { display: block; }
 
-        button {
-            display: block;
-            width: 100%;
-            padding: 16px;
-            font-size: 18px;
-            font-weight: bold;
-            background-color: var(--btn);
-            color: var(--btn-text);
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
 
-        button:active { opacity: 0.7; }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        /* Typography & Components */
+        h2 { margin-bottom: 15px; font-size: 1.5rem; }
+        p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.4; }
+        
+        .card { background: var(--card-bg); border-radius: var(--border-radius); padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); position: relative; }
 
-        .log-info { color: var(--hint); font-size: 12px; margin-top: 15px; }
+        button { width: 100%; padding: 14px; border: none; border-radius: 12px; background: var(--primary); color: white; font-size: 1rem; font-weight: bold; cursor: pointer; transition: transform 0.1s, opacity 0.2s; }
+        button:active { transform: scale(0.98); }
+        button:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
+        button.success-btn { background: var(--success); }
+        
+        input { width: 100%; padding: 14px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 12px; margin-bottom: 15px; font-size: 1rem; text-align: center; }
+        input:focus { outline: none; border-color: var(--primary); }
+
+        .back-link { display: inline-flex; align-items: center; color: var(--primary); font-weight: bold; font-size: 0.9rem; margin-bottom: 20px; cursor: pointer; padding: 5px 0; }
+        .back-link:active { opacity: 0.7; }
+
+        /* Task Board (Earn Screen) */
+        .task-row { display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #334155; }
+        .task-info { display: flex; align-items: center; gap: 15px; }
+        .task-icon { font-size: 2rem; }
+        .task-title { font-weight: bold; font-size: 1rem; margin-bottom: 4px; color: var(--text-main); }
+        .task-reward { color: var(--warning); font-size: 0.85rem; font-weight: bold; }
+        .task-action { min-width: 90px; text-align: center; }
+        .task-btn { padding: 10px 15px; font-size: 0.9rem; border-radius: 8px; }
+        .task-timer { color: var(--text-muted); font-family: monospace; font-size: 0.9rem; font-weight: bold; }
+
+        /* Game Grids & Lottery */
+        .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .game-card { text-align: center; padding: 20px 10px; cursor: pointer; border: 1px solid #334155; transition: transform 0.1s; }
+        .game-card:active { background: #334155; transform: scale(0.98); }
+        .game-icon { font-size: 2.5rem; margin-bottom: 10px; }
+
+        .lottery-banner { background: linear-gradient(135deg, #b4161b, #f59e0b); color: white; text-align: center; border-radius: var(--border-radius); padding: 20px; margin-bottom: 20px; cursor: pointer; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2); transition: transform 0.1s; }
+        .lottery-banner:active { transform: scale(0.98); }
+        .lottery-timer { font-size: 1.5rem; font-weight: bold; letter-spacing: 2px; margin: 10px 0; font-family: monospace; }
+        
+        .lottery-table-container { max-height: 250px; overflow-y: auto; margin-top: 15px; border-radius: 8px; border: 1px solid #334155; background: rgba(0,0,0,0.2); }
+        .lottery-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        .lottery-table td { padding: 10px 2px; text-align: center; border-bottom: 1px solid #334155; font-family: monospace; font-size: 0.75rem; color: var(--warning); border-right: 1px solid #334155; }
+        .lottery-table td:last-child { border-right: none; }
+
+        /* Bottom Nav */
+        nav { display: flex; background: var(--card-bg); border-top: 1px solid #334155; padding-bottom: env(safe-area-inset-bottom); }
+        .nav-item { flex: 1; padding: 15px 0; text-align: center; color: var(--text-muted); font-size: 0.8rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .nav-item.active { color: var(--primary); }
+        .nav-icon { font-size: 1.2rem; }
+
+        /* Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 100; padding: 20px; }
+        .modal { background: var(--card-bg); width: 100%; max-width: 400px; border-radius: var(--border-radius); padding: 25px; text-align: center; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        
+        /* --- SPIN WHEEL UI --- */
+        .wheel-container { position: relative; width: 280px; height: 280px; margin: 30px auto; overflow: hidden; padding: 10px; }
+        .wheel-pointer { position: absolute; top: -5px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 35px solid var(--text-main); z-index: 10; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.8)); }
+        .wheel { width: 100%; height: 100%; border-radius: 50%; border: 6px solid var(--card-bg); box-shadow: 0 0 20px rgba(59, 130, 246, 0.4), inset 0 0 10px rgba(0,0,0,0.5); background: conic-gradient( #ef4444 0deg 36deg, #f97316 36deg 72deg, #f59e0b 72deg 108deg, #84cc16 108deg 144deg, #10b981 144deg 180deg, #06b6d4 180deg 216deg, #3b82f6 216deg 252deg, #6366f1 252deg 288deg, #8b5cf6 288deg 324deg, #ec4899 324deg 360deg ); transition: transform 3.8s cubic-bezier(0.2, 0.05, 0.1, 1); position: relative; }
+        .wheel-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 45px; height: 45px; background: var(--bg-color); border-radius: 50%; border: 4px solid white; z-index: 5; box-shadow: 0 0 15px rgba(0,0,0,0.8); }
+        .wheel-slice { position: absolute; top: 0; left: 50%; width: 80px; height: 50%; margin-left: -40px; transform-origin: bottom center; display: flex; justify-content: center; padding-top: 12px; color: white; font-weight: 900; font-size: 0.8rem; text-align: center; line-height: 1.1; text-shadow: 1px 1px 3px rgba(0,0,0,0.9); z-index: 1; }
+
+        /* --- SCRATCH CARD UI --- */
+        .scratch-card-wrapper { padding: 15px; background: linear-gradient(135deg, #fcd34d, #d97706); border-radius: 20px; margin: 20px auto; max-width: 300px; box-shadow: 0 10px 25px rgba(217, 119, 6, 0.3); }
+        .scratch-area { width: 100%; height: 160px; background: var(--bg-color); border: 3px dashed rgba(255, 255, 255, 0.5); border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; color: #94a3b8; cursor: pointer; position: relative; overflow: hidden; }
+        .scratch-cover { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #cbd5e1 25%, #94a3b8 25%, #94a3b8 50%, #cbd5e1 50%, #cbd5e1 75%, #94a3b8 75%, #94a3b8 100%); background-size: 40px 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.6s ease-out, transform 0.6s ease-out; z-index: 2; color: #1e293b; font-weight: 900; font-size: 1.2rem; text-shadow: 1px 1px 0px rgba(255,255,255,0.4); box-shadow: inset 0 0 30px rgba(0,0,0,0.3); }
+        .scratch-cover.scratched { opacity: 0; transform: scale(1.1); pointer-events: none; }
+        .scratch-result { position: relative; z-index: 1; font-weight: 900; color: var(--success); font-size: 2rem; text-shadow: 0 0 15px rgba(16, 185, 129, 0.5); animation: pulseResult 1s infinite alternate; text-align: center; padding: 10px; }
+        @keyframes pulseResult { from { transform: scale(1); } to { transform: scale(1.05); } }
+
+        /* --- JHANDI MUNDA UI --- */
+        .symbol-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 25px;}
+        .symbol-btn { background: #0f172a; border: 2px solid #334155; border-radius: 12px; font-size: 2.2rem; padding: 15px 0; cursor: pointer; transition: all 0.2s;}
+        .symbol-btn.selected { border-color: var(--primary); background: rgba(59, 130, 246, 0.2); transform: scale(1.05); box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);}
+        .dice-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 16px;}
+        .die { background: #e2e8f0; color: #0f172a; font-size: 2.5rem; border-radius: 12px; height: 70px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 -4px 10px rgba(0,0,0,0.2), 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.1s; border: 1px solid #cbd5e1;}
+        .die.rolling { animation: shake 0.2s infinite; color: transparent; text-shadow: 0 0 10px rgba(15, 23, 42, 0.5); }
+        @keyframes shake { 0% { transform: translate(2px, 2px) rotate(0deg); } 25% { transform: translate(-2px, -3px) rotate(-10deg); } 50% { transform: translate(-4px, 0px) rotate(10deg); } 75% { transform: translate(2px, 3px) rotate(-10deg); } 100% { transform: translate(2px, -2px) rotate(0deg); } }
+        .payout-info { background: rgba(0,0,0,0.2); border: 1px solid #334155; border-radius: 12px; padding: 15px; margin-top: 25px; text-align: left; }
+        .payout-title { font-size: 0.9rem; color: var(--warning); font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
+        .payout-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.8rem; color: var(--text-muted); }
+        .payout-grid span { background: rgba(255,255,255,0.05); padding: 6px 10px; border-radius: 6px; display: flex; justify-content: space-between; }
+        .payout-grid span strong { color: var(--text-main); }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h2>Ad Manager Test</h2>
-        
-        <div id="status" class="status-box">🔄 Checking SDK...</div>
-        
-        <button id="adBtn" disabled>Play Rewarded Ad</button>
-        
-        <div class="log-info">
-            Open the gear icon (bottom right) <br> to see the console logs.
+<div id="app">
+    <header>
+        <div class="balance-pill rupee">₹ <span id="ui-rupees">0.00</span></div>
+        <div class="balance-pill ticket">🎟️ <span id="ui-tickets">0</span></div>
+    </header>
+
+    <div id="screens-container">
+        <div id="screen-earn" class="screen">
+            <h2 style="margin-bottom: 5px;">Task Board</h2>
+            <p style="margin-bottom: 20px;">Complete tasks to earn free tickets for games.</p>
+            <div class="card" style="padding: 15px;">
+                <div class="task-row">
+                    <div class="task-info">
+                        <div class="task-icon">📺</div>
+                        <div><div class="task-title">Watch an Ad</div><div class="task-reward">+1 Ticket</div></div>
+                    </div>
+                    <div class="task-action">
+                        <button class="task-btn" id="btn-task-ad1" onclick="window.watchAd('standard')">Watch</button>
+                        <div class="task-timer" id="timer-ad1" style="display: none;">10:00</div>
+                    </div>
+                </div>
+                <div class="task-row">
+                    <div class="task-info">
+                        <div class="task-icon">🎁</div>
+                        <div><div class="task-title">Rewarded Popup</div><div class="task-reward">+2 Tickets</div></div>
+                    </div>
+                    <div class="task-action">
+                        <button class="task-btn" id="btn-task-ad2" onclick="window.watchAd('rewarded')" style="background: var(--warning); color: #000;">Watch</button>
+                        <div class="task-timer" id="timer-ad2" style="display: none;">10:00</div>
+                    </div>
+                </div>
+                <div class="task-row" style="margin-bottom: 0;">
+                    <div class="task-info">
+                        <div class="task-icon">👥</div>
+                        <div><div class="task-title">Refer a Friend</div><div class="task-reward">+10 Tickets Each</div></div>
+                    </div>
+                    <div class="task-action">
+                        <button class="task-btn" id="btn-task-invite" style="background: var(--primary);" onclick="window.inviteFriend()">Invite</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="screen-games" class="screen active">
+            <h3 style="margin-bottom: 15px;">Featured Event</h3>
+            <div class="lottery-banner" onclick="window.openScreen('lottery')">
+                <h2>🏆 Weekly Lottery</h2>
+                <p style="color: #fde68a;">Win massive prizes every Monday!</p>
+                <div class="lottery-timer" id="ui-lottery-timer-preview">00d 00h 00m 00s</div>
+                <div style="font-weight: bold; background: rgba(0,0,0,0.2); display: inline-block; padding: 8px 16px; border-radius: 20px; margin-top: 10px;">
+                    Enter Lottery ➔
+                </div>
+            </div>
+            <h3 style="margin-bottom: 15px; margin-top: 25px;">Mini Games</h3>
+            <div class="game-grid">
+                <div class="card game-card" onclick="window.openScreen('spin')">
+                    <div class="game-icon">🎰</div>
+                    <h4>Lucky Spin</h4>
+                    <p style="font-size: 0.8rem; margin-top: 5px;">Cost: 1 🎟️</p>
+                </div>
+                <div class="card game-card" onclick="window.openScreen('scratch')">
+                    <div class="game-icon">✨</div>
+                    <h4>Lucky Scratch</h4>
+                    <p style="font-size: 0.8rem; margin-top: 5px;">Cost: 1 🎟️</p>
+                </div>
+                <div class="card game-card" style="grid-column: span 2;" onclick="window.openScreen('jhandi')">
+                    <div class="game-icon">🎲</div>
+                    <h4>Jhandi Munda</h4>
+                    <p style="font-size: 0.8rem; margin-top: 5px;">Cost: 1 🎟️ | Win up to ₹500!</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="screen-lottery" class="screen">
+            <div class="card" style="min-height: 400px;">
+                <div style="text-align: left;"><div class="back-link" onclick="window.openScreen('games')">⬅ Back to Menu</div></div>
+                <div class="lottery-banner" style="cursor: default; margin-bottom: 30px;">
+                    <h2 style="margin-bottom: 5px;">🏆 Weekly Lottery</h2>
+                    <p style="color: #fde68a; font-size: 0.85rem;">Draws every Monday at Midnight!</p>
+                    <div class="lottery-timer" id="ui-lottery-timer-main" style="font-size: 2rem;">00d 00h 00m 00s</div>
+                    <button class="success-btn" onclick="window.buyLotteryTicket()" style="margin-top: 15px; font-size: 1.1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                        Buy Entry (1 🎟️)
+                    </button>
+                </div>
+                <h3 style="font-size: 1.1rem; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center;">
+                    Your Active Tickets
+                    <span id="total-tickets-count" style="font-size: 0.85rem; color: var(--primary); font-weight: normal;"></span>
+                </h3>
+                <div id="no-tickets-msg" style="text-align: center; color: var(--text-muted); padding: 30px 0;">
+                    <span style="font-size: 2rem; display: block; margin-bottom: 10px;">🎫</span> You haven't bought any tickets yet.
+                </div>
+                <div class="lottery-table-container" id="lottery-tickets-container" style="display: none;">
+                    <table class="lottery-table"><tbody id="ui-lottery-list"></tbody></table>
+                </div>
+            </div>
+        </div>
+
+        <div id="screen-spin" class="screen">
+            <div class="card" style="text-align: center; min-height: 400px;">
+                <div style="text-align: left;"><div class="back-link" onclick="window.openScreen('games')">⬅ Back to Menu</div></div>
+                <h2>Lucky Spin</h2>
+                <div class="wheel-container">
+                    <div class="wheel-pointer"></div>
+                    <div class="wheel" id="spin-wheel">
+                        <div class="wheel-center"></div>
+                        <div class="wheel-slice" style="transform: rotate(18deg);">Try<br>Again</div>
+                        <div class="wheel-slice" style="transform: rotate(54deg);">1<br>🎟️</div>
+                        <div class="wheel-slice" style="transform: rotate(90deg);">2<br>🎟️</div>
+                        <div class="wheel-slice" style="transform: rotate(126deg);"><br>₹1</div>
+                        <div class="wheel-slice" style="transform: rotate(162deg);">5<br>🎟️</div>
+                        <div class="wheel-slice" style="transform: rotate(198deg);"><br>₹3</div>
+                        <div class="wheel-slice" style="transform: rotate(234deg);">10<br>🎟️</div>
+                        <div class="wheel-slice" style="transform: rotate(270deg);"><br>₹5</div>
+                        <div class="wheel-slice" style="transform: rotate(306deg);"><br>₹50</div>
+                        <div class="wheel-slice" style="transform: rotate(342deg);"><br>₹500</div>
+                    </div>
+                </div>
+                <p id="spin-msg" style="margin-bottom: 25px;">Cost: 1 Ticket to win up to ₹500!</p>
+                <button id="btn-spin" onclick="window.playSpin()">Spin Now</button>
+            </div>
+        </div>
+
+        <div id="screen-scratch" class="screen">
+            <div class="card" style="text-align: center; min-height: 400px;">
+                <div style="text-align: left;"><div class="back-link" onclick="window.openScreen('games')">⬅ Back to Menu</div></div>
+                <h2>Lucky Scratch</h2>
+                <p id="scratch-msg" style="margin-bottom: 10px;">Cost: 1 Ticket per card.</p>
+                <div class="scratch-card-wrapper">
+                    <div class="scratch-area" onclick="window.revealScratch()">
+                        <div class="scratch-cover" id="scratch-cover"><span style="font-size: 2rem; margin-bottom: 5px;">🪙</span> Tap to Scratch</div>
+                        <div class="scratch-result" id="scratch-result">???</div>
+                    </div>
+                </div>
+                <button id="btn-scratch" onclick="window.resetScratch()" style="display: none; margin-top: 20px;">Buy Another Card (1 🎟️)</button>
+            </div>
+        </div>
+
+        <div id="screen-jhandi" class="screen">
+            <div class="card" style="text-align: center; min-height: 400px;">
+                <div style="text-align: left;"><div class="back-link" onclick="window.openScreen('games')">⬅ Back to Menu</div></div>
+                <h2>Jhandi Munda</h2>
+                <p style="font-size: 0.85rem; margin-bottom: 15px;">Pick a symbol, roll the dice. The more matches, the bigger the payout!</p>
+                <div class="symbol-picker">
+                    <div class="symbol-btn" id="sym-💖" onclick="window.selectJhandi('💖')">💖</div>
+                    <div class="symbol-btn" id="sym-♠️" onclick="window.selectJhandi('♠️')">♠️</div>
+                    <div class="symbol-btn" id="sym-💎" onclick="window.selectJhandi('💎')">💎</div>
+                    <div class="symbol-btn" id="sym-♣️" onclick="window.selectJhandi('♣️')">♣️</div>
+                    <div class="symbol-btn" id="sym-👑" onclick="window.selectJhandi('👑')">👑</div>
+                    <div class="symbol-btn" id="sym-🚩" onclick="window.selectJhandi('🚩')">🚩</div>
+                </div>
+                <div class="dice-board" id="jhandi-board">
+                    <div class="die">🎲</div><div class="die">🎲</div><div class="die">🎲</div>
+                    <div class="die">🎲</div><div class="die">🎲</div><div class="die">🎲</div>
+                </div>
+                <p id="jhandi-msg" style="margin-bottom: 15px; color: var(--warning); font-weight: bold;">Select a symbol to start!</p>
+                <button id="btn-jhandi" onclick="window.playJhandi()">Roll Dice (1 🎟️)</button>
+
+                <div class="payout-info">
+                    <div class="payout-title">❓ Payout Rules</div>
+                    <div class="payout-grid">
+                        <span>1 Match <strong>1 🎟️</strong></span>
+                        <span>4 Matches <strong>₹5</strong></span>
+                        <span>2 Matches <strong>2 🎟️</strong></span>
+                        <span>5 Matches <strong>₹50</strong></span>
+                        <span>3 Matches <strong>₹1</strong></span>
+                        <span>6 Matches <strong style="color: var(--success);">₹500</strong></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="screen-withdraw" class="screen">
+            <div class="card">
+                <h2>Withdraw Funds</h2>
+                <p style="margin-bottom: 20px;">Minimum withdrawal is ₹100. Limit 1 per day.</p>
+                <input type="number" id="withdraw-amount" placeholder="Enter amount (₹)" min="100">
+                <button onclick="window.initiateWithdrawal()">Withdraw Now</button>
+                <p id="withdraw-status" style="margin-top: 15px; text-align: center; color: var(--warning); display: none;"></p>
+            </div>
+        </div>
+
+    </div>
+
+    <nav>
+        <div class="nav-item" id="nav-earn" onclick="window.switchTab('earn')">
+            <span class="nav-icon">📋</span><span>Earn</span>
+        </div>
+        <div class="nav-item active" id="nav-games" onclick="window.switchTab('games')">
+            <span class="nav-icon">🎮</span><span>Games</span>
+        </div>
+        <div class="nav-item" id="nav-withdraw" onclick="window.switchTab('withdraw')">
+            <span class="nav-icon">💳</span><span>Wallet</span>
+        </div>
+    </nav>
+
+    <div id="modal-ad" class="modal-overlay">
+        <div class="modal">
+            <div class="game-icon" style="font-size: 3rem; animation: spin 2s linear infinite;">⏳</div>
+            <h3 style="margin: 15px 0;">Playing Sponsor Ad...</h3>
+            <p id="ad-text-dynamic">Please wait 3 seconds.</p>
         </div>
     </div>
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        const btn = document.getElementById('adBtn');
-        const statusEl = document.getElementById('status');
+    <div id="modal-upi" class="modal-overlay">
+        <div class="modal">
+            <h2>Enter UPI ID</h2>
+            <p style="margin-bottom: 15px;">Please provide your UPI ID to receive ₹<span id="upi-amount-display"></span>.</p>
+            <input type="text" id="upi-id" placeholder="e.g. yourname@ybl">
+            <button onclick="window.processWithdrawal()" class="success-btn">Submit Request</button>
+            <button style="background: transparent; border: 1px solid #475569; margin-top: 10px;" onclick="window.closeModal('modal-upi')">Cancel</button>
+        </div>
+    </div>
 
-        // Tell Telegram the app is ready
-        tg.ready();
-        tg.expand();
+    <div id="modal-alert" class="modal-overlay" style="z-index: 200;">
+        <div class="modal">
+            <h2 id="alert-title">Alert</h2>
+            <p id="alert-desc" style="margin: 15px 0;"></p>
+            <button onclick="window.closeModal('modal-alert')">OK</button>
+        </div>
+    </div>
+</div>
 
-        // --- IMPORTANT: REPLACE THIS ID ---
-        const SPOT_ID = '6112917'; 
-        // ----------------------------------
+<style>
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+</style>
 
-        function initAdSDK() {
-            console.log("Attempting to initialize Onclicka SDK...");
+<script type="module">
+    // 1. Import Firebase SDKs
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
-            if (typeof window.initCdTma === 'function') {
-                window.initCdTma({ id: SPOT_ID })
-                    .then(show => {
-                        window.showAd = show;
-                        statusEl.innerText = "✅ SDK Ready";
-                        statusEl.style.color = "green";
-                        btn.disabled = false;
-                        console.log("SDK successfully initialized.");
-                    })
-                    .catch(err => {
-                        statusEl.innerText = "❌ Init Failed";
-                        console.error("Initialization Error:", err);
-                        tg.showAlert("Failed to load ads. Check your Spot ID.");
-                    });
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAK315b3-j5RrIvx0vH2OE_mdd86Zbd8Wc",
+  authDomain: "test-6f668.firebaseapp.com",
+  databaseURL: "https://test-6f668-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "test-6f668",
+  storageBucket: "test-6f668.firebasestorage.app",
+  messagingSenderId: "1070554867228",
+  appId: "1:1070554867228:web:8f4abf585baa1d82f5e1d9",
+  measurementId: "G-7XZ8F2FD5K"
+};
+
+    // 3. Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // 4. Get Telegram User ID for unique Database reference
+    const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+    const userId = tgUser ? tgUser.id : "test_user_browser_" + Math.floor(Math.random() * 1000);
+    const userRef = ref(db, 'users/' + userId);
+
+    // --- STATE MANAGEMENT ---
+    let state = {
+        rupees: 0,
+        tickets: 5,
+        lastAdTime: 0,           
+        lastRewardedAdTime: 0,   
+        lastWithdrawDate: "",
+        lotteryNumbers: []
+    };
+
+    const COOLDOWN_MS = 10 * 60 * 1000;
+    
+    function getTodayString() {
+        let d = new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+    }
+
+    // --- ASYNC FIREBASE INITIALIZATION ---
+    async function init() {
+        try {
+            // Fetch live data from Realtime Database
+            const snapshot = await get(userRef);
+            if (snapshot.exists()) {
+                let parsed = snapshot.val();
+                state = { ...state, ...parsed }; // Merge DB data into state
+                if (!state.lotteryNumbers) state.lotteryNumbers = [];
             } else {
-                statusEl.innerText = "❌ SDK Script Not Loaded";
-                console.error("window.initCdTma is not a function. Check if tma.js is blocked.");
+                // New User: Check for referral link bonus
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('ref') || window.location.hash.includes('tgWebAppStartParam')) {
+                    state.tickets += 10;
+                    setTimeout(() => { showAlert("Welcome Bonus!", "You received 10 extra Tickets because you were invited by a friend!"); }, 800);
+                }
+                saveState(); // Save new profile to DB immediately
             }
+        } catch (error) {
+            console.error("Firebase load error:", error);
+            // Fallback to local storage if offline
+            const saved = localStorage.getItem('cryptoPlayFallback');
+            if (saved) state = { ...state, ...JSON.parse(saved) };
         }
 
-        btn.onclick = () => {
-            if (window.showAd) {
-                statusEl.innerText = "⌛ Loading Ad...";
-                btn.disabled = true;
+        updateUI();
+        setInterval(gameLoop, 1000);
+        renderLotteryTable();
+    }
 
-                window.showAd()
-                    .then(() => {
-                        statusEl.innerText = "💰 Ad Finished! Reward User.";
-                        tg.HapticFeedback.notificationOccurred('success');
-                        console.log("Ad completed successfully.");
-                        btn.disabled = false;
-                    })
-                    .catch(err => {
-                        statusEl.innerText = "⚠️ Ad Closed/Error";
-                        console.warn("Ad result:", err);
-                        btn.disabled = false;
-                    });
-            }
-        };
+    // --- ASYNC FIREBASE SAVE ---
+    function saveState() {
+        // Push state to Realtime Database
+        set(userRef, state).catch(error => console.error("Firebase save error:", error));
+        
+        // Save local backup
+        localStorage.setItem('cryptoPlayFallback', JSON.stringify(state));
+        updateUI();
+    }
 
-        // Run init when window loads
-        window.onload = initAdSDK;
-    </script>
+    function updateUI() { document.getElementById('ui-rupees').innerText = state.rupees.toFixed(2); document.getElementById('ui-tickets').innerText = state.tickets; }
+
+    // --- EXPOSE FUNCTIONS TO WINDOW FOR HTML ONCLICK ---
+    window.switchTab = function(tabId) {
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        document.getElementById('nav-' + tabId).classList.add('active');
+        window.openScreen(tabId);
+    };
+
+    window.openScreen = function(screenId) {
+        document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+        document.getElementById('screen-' + screenId).classList.add('active');
+        if (screenId === 'scratch' && !scratchReady) window.resetScratch();
+    };
+
+    function showAlert(title, desc) {
+        document.getElementById('alert-title').innerText = title;
+        document.getElementById('alert-desc').innerText = desc;
+        document.getElementById('modal-alert').style.display = 'flex';
+    }
+    window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; };
+
+    // --- EARN TASKS LOGIC ---
+    window.inviteFriend = function() {
+        let myFakeId = Math.floor(Math.random() * 90000) + 10000;
+        let refLink = window.location.origin + window.location.pathname + "?ref=" + myFakeId;
+        
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(refLink);
+        } else {
+            let textArea = document.createElement("textarea"); textArea.value = refLink; document.body.appendChild(textArea); textArea.select(); document.execCommand("copy"); textArea.remove();
+        }
+        showAlert("Link Copied!", "Your referral link was copied to your clipboard. When a friend joins using your link, you BOTH get 10 Tickets! (Simulated)");
+    };
+
+    window.watchAd = function(type) {
+        let now = Date.now();
+        if (type === 'standard') {
+            if (now - state.lastAdTime < COOLDOWN_MS) return;
+            document.getElementById('ad-text-dynamic').innerText = "Please wait 3 seconds.";
+            document.getElementById('modal-ad').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('modal-ad').style.display = 'none';
+                state.tickets += 1; state.lastAdTime = Date.now(); saveState();
+                showAlert("Success!", "You earned 1 Ticket!");
+            }, 3000);
+        } else if (type === 'rewarded') {
+            if (now - state.lastRewardedAdTime < COOLDOWN_MS) return;
+            document.getElementById('ad-text-dynamic').innerText = "Playing premium ad... wait 5 seconds.";
+            document.getElementById('modal-ad').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('modal-ad').style.display = 'none';
+                state.tickets += 2; state.lastRewardedAdTime = Date.now(); saveState();
+                showAlert("Big Reward!", "You earned 2 Tickets!");
+            }, 5000);
+        }
+    };
+
+    // --- GAMES LOGIC ---
+    const rewardsPool = [
+        { name: "Almost win,\nTry again!", type: "none", val: 0, weight: 4000 },
+        { name: "1 Ticket", type: "ticket", val: 1, weight: 3000 },
+        { name: "2 Tickets", type: "ticket", val: 2, weight: 1000 },
+        { name: "₹1", type: "rupee", val: 1, weight: 1000 },
+        { name: "5 Tickets", type: "ticket", val: 5, weight: 400 },
+        { name: "₹3", type: "rupee", val: 3, weight: 400 },
+        { name: "10 Tickets", type: "ticket", val: 10, weight: 100 },
+        { name: "₹5", type: "rupee", val: 5, weight: 80 },
+        { name: "₹50", type: "rupee", val: 50, weight: 18 },
+        { name: "₹500", type: "rupee", val: 500, weight: 2 }
+    ];
+
+    let currentSpinRotation = 0; 
+    window.playSpin = function() {
+        if (state.tickets < 1) return showAlert("Oops!", "You need 1 Ticket to play.");
+        state.tickets -= 1; saveState();
+        
+        const btn = document.getElementById('btn-spin'); const wheel = document.getElementById('spin-wheel');
+        btn.disabled = true; document.getElementById('spin-msg').innerText = "Spinning...";
+        
+        let rand = Math.random() * 10000; let cumulative = 0; let rewardIndex = 0;
+        for (let i = 0; i < rewardsPool.length; i++) { cumulative += rewardsPool[i].weight; if (rand <= cumulative) { rewardIndex = i; break; } }
+        let reward = rewardsPool[rewardIndex];
+
+        let targetAngleToTop = 360 - ((rewardIndex * 36) + 18); 
+        let jitter = (Math.random() * 20) - 10; 
+        let fullSpins = 1800; 
+        
+        let remainder = currentSpinRotation % 360;
+        currentSpinRotation += (360 - remainder) + fullSpins + targetAngleToTop + jitter;
+
+        wheel.style.transform = `rotate(${currentSpinRotation}deg)`;
+        
+        setTimeout(() => {
+            if (reward.type === 'ticket') state.tickets += reward.val;
+            if (reward.type === 'rupee') state.rupees += reward.val;
+            saveState(); 
+            document.getElementById('spin-msg').innerText = "Cost: 1 Ticket to win up to ₹500!";
+            showAlert("Spin Result", `🎰 ${reward.name.replace('\n', ' ')}`); 
+            btn.disabled = false;
+        }, 4000); 
+    };
+
+    let scratchReady = true;
+    window.revealScratch = function() {
+        if (!scratchReady) return;
+        if (state.tickets < 1) return showAlert("Oops!", "You need 1 Ticket to scratch.");
+        state.tickets -= 1; saveState(); scratchReady = false;
+        
+        let rand = Math.random() * 10000; let cumulative = 0; let reward = rewardsPool[0];
+        for (let i = 0; i < rewardsPool.length; i++) { cumulative += rewardsPool[i].weight; if (rand <= cumulative) { reward = rewardsPool[i]; break; } }
+        
+        document.getElementById('scratch-cover').classList.add('scratched');
+        setTimeout(() => {
+            document.getElementById('scratch-result').innerText = reward.name.replace('\n', ' ');
+            if (reward.type === 'ticket') state.tickets += reward.val;
+            if (reward.type === 'rupee') state.rupees += reward.val;
+            saveState(); document.getElementById('btn-scratch').style.display = 'block';
+        }, 300);
+    };
+    
+    window.resetScratch = function() {
+        document.getElementById('scratch-cover').classList.remove('scratched');
+        document.getElementById('scratch-result').innerText = "???"; document.getElementById('btn-scratch').style.display = 'none'; scratchReady = true;
+    };
+
+    const jhandiSymbols = ['💖', '♠️', '💎', '♣️', '👑', '🚩'];
+    let selectedJhandi = null;
+    window.selectJhandi = function(sym) {
+        selectedJhandi = sym;
+        document.querySelectorAll('.symbol-btn').forEach(btn => btn.classList.remove('selected'));
+        document.getElementById('sym-' + sym).classList.add('selected');
+        document.getElementById('jhandi-msg').innerText = `You selected ${sym}. Ready to roll!`; document.getElementById('jhandi-msg').style.color = 'var(--text-main)';
+    };
+    
+    window.playJhandi = function() {
+        if (!selectedJhandi) return showAlert("Hold On!", "Please select a symbol.");
+        if (state.tickets < 1) return showAlert("Oops!", "You need 1 Ticket to roll.");
+        state.tickets -= 1; saveState();
+        const btn = document.getElementById('btn-jhandi'); const diceElements = document.querySelectorAll('.die');
+        btn.disabled = true; document.getElementById('jhandi-msg').innerText = "Rolling...";
+        diceElements.forEach(die => die.classList.add('rolling'));
+        let rollInterval = setInterval(() => { diceElements.forEach(die => die.innerText = jhandiSymbols[Math.floor(Math.random() * 6)]); }, 100);
+        setTimeout(() => {
+            clearInterval(rollInterval); diceElements.forEach(die => die.classList.remove('rolling'));
+            let matches = 0;
+            diceElements.forEach(die => { let finalSym = jhandiSymbols[Math.floor(Math.random() * 6)]; die.innerText = finalSym; if (finalSym === selectedJhandi) matches++; });
+            let rewardMsg = "";
+            if (matches === 0) rewardMsg = "No matches. Better luck next time!";
+            else if (matches === 1) { state.tickets += 1; rewardMsg = "1 Match! You got your 1 Ticket back."; }
+            else if (matches === 2) { state.tickets += 2; rewardMsg = "2 Matches! You won 2 Tickets!"; }
+            else if (matches === 3) { state.rupees += 1; rewardMsg = "Awesome! 3 Matches! You won ₹1!"; }
+            else if (matches === 4) { state.rupees += 5; rewardMsg = "Incredible! 4 Matches! You won ₹5!"; }
+            else if (matches === 5) { state.rupees += 50; rewardMsg = "UNBELIEVABLE! 5 Matches! You won ₹50!"; }
+            else if (matches === 6) { state.rupees += 500; rewardMsg = "JACKPOT! 6 Matches! You won ₹500!"; }
+            saveState(); document.getElementById('jhandi-msg').innerText = rewardMsg; showAlert(`Matches: ${matches} ${selectedJhandi}`, rewardMsg); btn.disabled = false;
+        }, 2000);
+    };
+
+    // --- LOTTERY & WITHDRAWALS ---
+    window.buyLotteryTicket = function() {
+        if (state.tickets < 1) return showAlert("Oops!", "You need 1 Ticket to enter.");
+        state.tickets -= 1; state.lotteryNumbers.push("#" + Math.floor(Math.random() * 16777215).toString(16).toUpperCase().padStart(6, '0'));
+        saveState(); renderLotteryTable();
+    };
+
+    function renderLotteryTable() {
+        const list = document.getElementById('ui-lottery-list'); const container = document.getElementById('lottery-tickets-container');
+        const noTicketsMsg = document.getElementById('no-tickets-msg'); const countDisplay = document.getElementById('total-tickets-count');
+        list.innerHTML = '';
+        if (state.lotteryNumbers.length === 0) { container.style.display = 'none'; noTicketsMsg.style.display = 'block'; countDisplay.innerText = ""; return; }
+        container.style.display = 'block'; noTicketsMsg.style.display = 'none'; countDisplay.innerText = `Total: ${state.lotteryNumbers.length}`;
+        let row;
+        for (let i = 0; i < state.lotteryNumbers.length; i++) {
+            if (i % 5 === 0) { row = document.createElement('tr'); list.appendChild(row); }
+            let td = document.createElement('td'); td.innerText = state.lotteryNumbers[i]; row.appendChild(td);
+        }
+        let remainder = state.lotteryNumbers.length % 5;
+        if (remainder !== 0) { for (let i = remainder; i < 5; i++) { row.appendChild(document.createElement('td')); } }
+    }
+
+    let pendingWithdrawAmount = 0;
+    window.initiateWithdrawal = function() {
+        const amount = parseFloat(document.getElementById('withdraw-amount').value); const statusEl = document.getElementById('withdraw-status');
+        statusEl.style.display = 'block';
+        if (isNaN(amount) || amount < 100) return statusEl.innerText = "Minimum withdrawal is ₹100.";
+        if (amount > state.rupees) return statusEl.innerText = "Insufficient wallet balance.";
+        if (state.lastWithdrawDate === getTodayString()) return statusEl.innerText = "You can only withdraw once a day.";
+        pendingWithdrawAmount = amount; statusEl.style.display = 'none'; document.getElementById('upi-amount-display').innerText = amount; document.getElementById('modal-upi').style.display = 'flex';
+    };
+
+    window.processWithdrawal = function() {
+        const upi = document.getElementById('upi-id').value.trim();
+        if (upi.length < 5 || !upi.includes('@')) return alert("Please enter a valid UPI ID");
+        state.rupees -= pendingWithdrawAmount; state.lastWithdrawDate = getTodayString(); saveState();
+        window.closeModal('modal-upi'); document.getElementById('withdraw-amount').value = ''; showAlert("Withdrawal Successful!", `₹${pendingWithdrawAmount} sent to ${upi}.`);
+    };
+
+    // --- TIMERS ---
+    function formatTime(ms) {
+        let sec = Math.floor(ms / 1000); let m = Math.floor(sec / 60).toString().padStart(2, '0'); let s = (sec % 60).toString().padStart(2, '0'); return `${m}:${s}`;
+    }
+
+    function gameLoop() {
+        let now = Date.now();
+        // Standard Ad Timer
+        let btnAd1 = document.getElementById('btn-task-ad1'); let timerAd1 = document.getElementById('timer-ad1');
+        let timePassed1 = now - state.lastAdTime;
+        if (timePassed1 < COOLDOWN_MS) { btnAd1.style.display = 'none'; timerAd1.style.display = 'block'; timerAd1.innerText = formatTime(COOLDOWN_MS - timePassed1); } 
+        else { btnAd1.style.display = 'block'; timerAd1.style.display = 'none'; }
+
+        // Rewarded Ad Timer
+        let btnAd2 = document.getElementById('btn-task-ad2'); let timerAd2 = document.getElementById('timer-ad2');
+        let timePassed2 = now - state.lastRewardedAdTime;
+        if (timePassed2 < COOLDOWN_MS) { btnAd2.style.display = 'none'; timerAd2.style.display = 'block'; timerAd2.innerText = formatTime(COOLDOWN_MS - timePassed2); } 
+        else { btnAd2.style.display = 'block'; timerAd2.style.display = 'none'; }
+
+        // Lottery Timer
+        let dNext = new Date(); dNext.setDate(dNext.getDate() + ((1 + 7 - dNext.getDay()) % 7 || 7)); dNext.setHours(0, 0, 0, 0);
+        let diff = dNext.getTime() - now;
+        let timerString = `${Math.floor(diff / 86400000).toString().padStart(2,'0')}d ${Math.floor((diff % 86400000) / 3600000).toString().padStart(2,'0')}h ${Math.floor((diff % 3600000) / 60000).toString().padStart(2,'0')}m ${Math.floor((diff % 60000) / 1000).toString().padStart(2,'0')}s`;
+        
+        document.getElementById('ui-lottery-timer-preview').innerText = timerString;
+        document.getElementById('ui-lottery-timer-main').innerText = timerString;
+    }
+
+    // Start App
+    window.onload = init;
+</script>
 </body>
 </html>
