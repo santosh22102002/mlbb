@@ -1,170 +1,131 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Crypto Mini App</title>
+<meta charset="UTF-8">
+<title>Crypto Chart Mini App</title>
 
-  <!-- Telegram SDK -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://unpkg.com/klinecharts/dist/klinecharts.min.js"></script>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-  <!-- TradingView -->
-  <script src="https://s3.tradingview.com/tv.js"></script>
+<style>
+  body {
+    margin: 0;
+    background: #0d1117;
+    color: white;
+    font-family: Arial;
+  }
 
-  <style>
-    body {
-      margin: 0;
-      background: #0d1117;
-      color: #fff;
-      font-family: Arial, sans-serif;
-    }
+  #topbar {
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    background: #161b22;
+  }
 
-    #chart {
-      height: 50vh;
-    }
+  button {
+    padding: 8px 12px;
+    border: none;
+    background: #21262d;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+  }
 
-    #panel {
-      padding: 15px;
-    }
+  button.active {
+    background: #238636;
+  }
 
-    h2, h3 {
-      margin: 8px 0;
-    }
-
-    .row {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-    }
-
-    button {
-      flex: 1;
-      padding: 12px;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      cursor: pointer;
-      color: #fff;
-    }
-
-    #buy { background: #16c784; }
-    #sell { background: #ea3943; }
-
-    #log {
-      margin-top: 10px;
-      font-size: 13px;
-      color: #aaa;
-      max-height: 80px;
-      overflow-y: auto;
-    }
-  </style>
+  #chart {
+    height: calc(100vh - 50px);
+  }
+</style>
 </head>
 
 <body>
 
-  <div id="chart"></div>
+<div id="topbar">
+  <button onclick="loadSymbol('BTCUSDT')" id="BTCUSDT">BTC</button>
+  <button onclick="loadSymbol('ETHUSDT')" id="ETHUSDT">ETH</button>
+  <button onclick="loadSymbol('SOLUSDT')" id="SOLUSDT">SOL</button>
 
-  <div id="panel">
-    <h3 id="user">Loading...</h3>
-    <h2>Balance: $<span id="balance">0</span></h2>
-    <h3>Position: <span id="position">0</span> BTC</h3>
+  <button onclick="saveDrawings()">💾 Save</button>
+  <button onclick="clearDrawings()">🗑 Clear</button>
+</div>
 
-    <div class="row">
-      <button id="buy">BUY $10</button>
-      <button id="sell">SELL $10</button>
-    </div>
+<div id="chart"></div>
 
-    <div id="log"></div>
-  </div>
+<script>
+const chart = klinecharts.init('chart');
 
-  <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
+// Telegram user (optional)
+const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
+const userId = user ? user.id : "guest";
 
-    // --- USER ---
-    const user = tg.initDataUnsafe?.user || {};
-    const userId = user.id || "guest";
-    const name = user.first_name || "Guest";
+// Current symbol
+let currentSymbol = "BTCUSDT";
 
-    document.getElementById("user").innerText = `Hello, ${name}`;
+// Highlight active button
+function setActive(symbol) {
+  document.querySelectorAll("button").forEach(btn => btn.classList.remove("active"));
+  document.getElementById(symbol).classList.add("active");
+}
 
-    // --- STORAGE KEYS ---
-    const BAL_KEY = "bal_" + userId;
-    const POS_KEY = "pos_" + userId;
+// Load Binance data
+async function loadSymbol(symbol) {
+  currentSymbol = symbol;
+  setActive(symbol);
 
-    // --- STATE ---
-    let balance = parseFloat(localStorage.getItem(BAL_KEY)) || 1000;
-    let position = parseFloat(localStorage.getItem(POS_KEY)) || 0;
-    let price = 30000; // fake price (can upgrade later)
+  const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1m&limit=500`);
+  const data = await res.json();
 
-    const balanceEl = document.getElementById("balance");
-    const positionEl = document.getElementById("position");
-    const logEl = document.getElementById("log");
+  const formatted = data.map(k => ({
+    timestamp: k[0],
+    open: +k[1],
+    high: +k[2],
+    low: +k[3],
+    close: +k[4],
+    volume: +k[5]
+  }));
 
-    function render() {
-      balanceEl.innerText = balance.toFixed(2);
-      positionEl.innerText = position.toFixed(5);
-    }
+  chart.applyNewData(formatted);
 
-    function log(msg) {
-      const p = document.createElement("div");
-      p.innerText = msg;
-      logEl.prepend(p);
-    }
+  loadDrawings();
+}
 
-    function save() {
-      localStorage.setItem(BAL_KEY, balance);
-      localStorage.setItem(POS_KEY, position);
-    }
+// Save drawings
+function saveDrawings() {
+  const overlays = chart.getOverlays();
 
-    // --- TRADING LOGIC ---
-    function buy(amountUSD) {
-      if (balance < amountUSD) {
-        log("❌ Not enough balance");
-        return;
-      }
-      const btc = amountUSD / price;
-      balance -= amountUSD;
-      position += btc;
-      save();
-      render();
-      log(`✅ Bought $${amountUSD} BTC`);
-    }
+  const key = `drawings_${userId}_${currentSymbol}`;
+  localStorage.setItem(key, JSON.stringify(overlays));
 
-    function sell(amountUSD) {
-      const btc = amountUSD / price;
-      if (position < btc) {
-        log("❌ Not enough BTC");
-        return;
-      }
-      position -= btc;
-      balance += amountUSD;
-      save();
-      render();
-      log(`✅ Sold $${amountUSD} BTC`);
-    }
+  alert("Saved!");
+}
 
-    document.getElementById("buy").onclick = () => buy(10);
-    document.getElementById("sell").onclick = () => sell(10);
+// Load drawings
+function loadDrawings() {
+  const key = `drawings_${userId}_${currentSymbol}`;
+  const saved = JSON.parse(localStorage.getItem(key) || "[]");
 
-    render();
+  chart.clearOverlays();
 
-    // --- TRADINGVIEW CHART ---
-    new TradingView.widget({
-      container_id: "chart",
-      width: "100%",
-      height: "100%",
-      symbol: "BINANCE:BTCUSDT",
-      interval: "15",
-      timezone: "Asia/Kolkata",
-      theme: "dark",
-      style: "1",
-      locale: "en",
-      hide_top_toolbar: false,
-      enable_publishing: false,
-      studies: ["RSI@tv-basicstudies"]
-    });
-  </script>
+  saved.forEach(o => chart.createOverlay(o));
+}
+
+// Clear drawings
+function clearDrawings() {
+  chart.clearOverlays();
+
+  const key = `drawings_${userId}_${currentSymbol}`;
+  localStorage.removeItem(key);
+}
+
+// Example drawing (optional starter)
+chart.createIndicator('MA');
+
+// Load default
+loadSymbol("BTCUSDT");
+</script>
 
 </body>
 </html>
