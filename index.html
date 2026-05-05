@@ -22,7 +22,7 @@
         .toolbar { 
             display: flex; overflow-x: auto; padding: 6px; gap: 6px; 
             background: var(--secondary); border-bottom: 1px solid var(--border);
-            scrollbar-width: none;
+            scrollbar-width: none; -webkit-overflow-scrolling: touch;
         }
         .btn-sm { 
             padding: 6px 12px; font-size: 12px; border: 1px solid var(--border); 
@@ -32,10 +32,8 @@
 
         #chart-container { 
             flex-grow: 1; width: 100%; 
-            /* CRITICAL: Stops mobile browser from scrolling the page so you can zoom the chart */
-            touch-action: none; 
-            user-select: none;
-            -webkit-user-select: none;
+            touch-action: none; /* Stops the browser from handling the touch */
+            user-select: none; -webkit-user-select: none;
         }
         
         .trade-bar { 
@@ -73,32 +71,44 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
+        tg.ready();
 
         let currentInterval = '1m';
         let ws = null;
         let balance = parseFloat(localStorage.getItem('paper_balance')) || 10000;
         let currentPrice = 0;
 
-        // --- 1. INITIALIZE CHART WITH MOBILE OPTIONS ---
-        const chart = klinecharts.init('chart-container', {
-            // This enables scrolling/zooming on the price axis (Y-axis)
-            yAxis: { scrollZoomEnabled: true },
-            xAxis: { scrollZoomEnabled: true }
-        });
+        // --- 1. INITIALIZE CHART WITH MOBILE ZOOM OPTIONS ---
+        const chart = klinecharts.init('chart-container');
         
         chart.setStyles({
             grid: { horizontal: { color: '#2b2b43', style: 'dash' }, vertical: { show: false } },
             yAxis: {
-                size: 65, // Wider axis makes it easier to grab on mobile
-                position: 'right'
+                size: 80, // Massive hitbox for mobile thumbs
+                scrollZoomEnabled: true, // Key for vertical zoom
             },
+            xAxis: { scrollZoomEnabled: true },
             candle: { 
                 tooltip: { showRule: 'follow_cross' },
-                margin: { top: 0.15, bottom: 0.1 } 
+                margin: { top: 0.2, bottom: 0.1 } 
             }
         });
 
-        // --- 2. DATA LOGIC ---
+        // --- 2. PREVENT TELEGRAM INTERFERENCE ---
+        const container = document.getElementById('chart-container');
+        container.addEventListener('touchstart', (e) => {
+            // If the user touches the right side (where the price axis is)
+            // we stop the event from bubbling up to Telegram's "swipe-to-close"
+            if (e.touches[0].clientX > window.innerWidth - 85) {
+                e.stopPropagation();
+            }
+        }, { passive: false });
+
+        container.addEventListener('touchmove', (e) => {
+            e.preventDefault(); // Kills the "pull-to-refresh" and page scroll
+        }, { passive: false });
+
+        // --- 3. DATA & WEBSOCKET ---
         async function loadData(interval) {
             try {
                 const resp = await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=500`);
@@ -107,7 +117,7 @@
                     timestamp: d[0], open: +d[1], high: +d[2], low: +d[3], close: +d[4], volume: +d[5]
                 })));
                 startWS(interval);
-            } catch (e) { tg.showAlert("Network Error"); }
+            } catch (e) { console.error("Data error", e); }
         }
 
         function startWS(interval) {
@@ -123,7 +133,7 @@
             };
         }
 
-        // --- 3. TOOLS & UI ---
+        // --- 4. TOOLBAR FUNCTIONS ---
         function changeTF(tf, btn) {
             document.querySelectorAll('#tf-bar .btn-sm').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
@@ -144,29 +154,28 @@
 
         function addDrawing() {
             chart.createOverlay({ name: 'segment' });
-            tg.showAlert("Tap/Drag to draw a trend line");
+            tg.HapticFeedback.selectionChanged();
         }
 
         function resetView() {
-            chart.scrollToRealTime(); // Moves to current candle
+            chart.scrollToRealTime();
         }
 
-        // --- 4. TRADING ---
+        // --- 5. TRADE ---
         function handleTrade(side) {
             if (!currentPrice) return;
-            tg.HapticFeedback.impactOccurred('medium');
-            tg.showConfirm(`Execute ${side} at $${currentPrice.toFixed(2)}?`, (ok) => {
+            tg.HapticFeedback.impactOccurred('light');
+            tg.showConfirm(`Confirm ${side} at $${currentPrice.toFixed(2)}?`, (ok) => {
                 if (ok) {
-                    if (side === 'BUY' && balance >= 1000) { balance -= 1000; tg.showAlert("Bought $1k BTC"); }
-                    else if (side === 'SELL') { tg.showAlert("Position Sold"); }
-                    else { tg.showAlert("Insufficient Funds"); }
+                    if (side === 'BUY' && balance >= 1000) { balance -= 1000; }
+                    else if (side === 'SELL') { tg.showAlert("Sold position"); }
                     document.getElementById('balance-display').innerText = `$${balance.toLocaleString()}`;
                     localStorage.setItem('paper_balance', balance);
                 }
             });
         }
 
-        // --- BOOTSTRAP ---
+        // Init App
         loadData('1m');
         document.getElementById('balance-display').innerText = `$${balance.toLocaleString()}`;
         window.onresize = () => chart.resize();
