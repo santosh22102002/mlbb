@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Crypto Chart Mini App</title>
+<title>Crypto Mini App</title>
 
 <script src="https://unpkg.com/klinecharts/dist/klinecharts.min.js"></script>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -17,9 +17,10 @@
 
   #topbar {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     padding: 10px;
     background: #161b22;
+    overflow-x: auto;
   }
 
   button {
@@ -29,6 +30,7 @@
     color: white;
     border-radius: 6px;
     cursor: pointer;
+    white-space: nowrap;
   }
 
   button.active {
@@ -36,7 +38,8 @@
   }
 
   #chart {
-    height: calc(100vh - 50px);
+    width: 100%;
+    height: 90vh;
   }
 </style>
 </head>
@@ -55,18 +58,36 @@
 <div id="chart"></div>
 
 <script>
-const chart = klinecharts.init('chart');
+let chart;
+let currentSymbol = "BTCUSDT";
 
-// Telegram user (optional)
+// Telegram user
 const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
 const userId = user ? user.id : "guest";
 
-// Current symbol
-let currentSymbol = "BTCUSDT";
+// Init chart AFTER page loads
+window.onload = () => {
+  chart = klinecharts.init('chart');
+
+  // Add indicator (optional)
+  chart.createIndicator('MA');
+
+  // Fix Telegram rendering
+  setTimeout(() => {
+    resizeChart();
+    loadSymbol("BTCUSDT");
+  }, 300);
+};
+
+// Resize fix
+function resizeChart() {
+  const el = document.getElementById('chart');
+  chart.resize(el.clientWidth, el.clientHeight);
+}
 
 // Highlight active button
 function setActive(symbol) {
-  document.querySelectorAll("button").forEach(btn => btn.classList.remove("active"));
+  document.querySelectorAll("#topbar button").forEach(btn => btn.classList.remove("active"));
   document.getElementById(symbol).classList.add("active");
 }
 
@@ -75,56 +96,62 @@ async function loadSymbol(symbol) {
   currentSymbol = symbol;
   setActive(symbol);
 
-  const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1m&limit=500`);
-  const data = await res.json();
+  try {
+    const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1m&limit=500`);
+    const data = await res.json();
 
-  const formatted = data.map(k => ({
-    timestamp: k[0],
-    open: +k[1],
-    high: +k[2],
-    low: +k[3],
-    close: +k[4],
-    volume: +k[5]
-  }));
+    const formatted = data.map(k => ({
+      timestamp: k[0],
+      open: +k[1],
+      high: +k[2],
+      low: +k[3],
+      close: +k[4],
+      volume: +k[5]
+    }));
 
-  chart.applyNewData(formatted);
+    chart.clearData();
+    chart.applyNewData(formatted);
 
-  loadDrawings();
+    setTimeout(() => {
+      resizeChart();
+    }, 100);
+
+    loadDrawings();
+
+  } catch (err) {
+    console.error(err);
+    alert("Failed to load data");
+  }
 }
 
 // Save drawings
 function saveDrawings() {
   const overlays = chart.getOverlays();
-
-  const key = `drawings_${userId}_${currentSymbol}`;
+  const key = `draw_${userId}_${currentSymbol}`;
   localStorage.setItem(key, JSON.stringify(overlays));
-
   alert("Saved!");
 }
 
 // Load drawings
 function loadDrawings() {
-  const key = `drawings_${userId}_${currentSymbol}`;
+  const key = `draw_${userId}_${currentSymbol}`;
   const saved = JSON.parse(localStorage.getItem(key) || "[]");
 
   chart.clearOverlays();
-
   saved.forEach(o => chart.createOverlay(o));
 }
 
 // Clear drawings
 function clearDrawings() {
   chart.clearOverlays();
-
-  const key = `drawings_${userId}_${currentSymbol}`;
+  const key = `draw_${userId}_${currentSymbol}`;
   localStorage.removeItem(key);
 }
 
-// Example drawing (optional starter)
-chart.createIndicator('MA');
-
-// Load default
-loadSymbol("BTCUSDT");
+// Handle resize (Telegram fix)
+window.addEventListener("resize", () => {
+  if (chart) resizeChart();
+});
 </script>
 
 </body>
