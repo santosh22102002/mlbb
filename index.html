@@ -7,56 +7,41 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/klinecharts/dist/klinecharts.min.js"></script>
     <style>
-        :root {
-            --bg: #131722; --text: #d1d4dc; --accent: #2962ff; --secondary: #1e222d; --border: #363c4e;
+        :root { --bg: #131722; --text: #d1d4dc; --accent: #2962ff; --secondary: #1e222d; --border: #363c4e; }
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background: var(--bg); color: var(--text); 
+            overflow: hidden; position: fixed; /* Prevents "bounce" on iOS */
         }
-        body { 
-            margin: 0; background: var(--bg); color: var(--text); 
-            font-family: -apple-system, system-ui, sans-serif;
-            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
-        }
-        #header {
-            padding: 10px 15px; display: flex; justify-content: space-between;
-            background: var(--secondary); border-bottom: 1px solid var(--border);
-        }
-        .toolbar { 
-            display: flex; overflow-x: auto; padding: 6px; gap: 6px; 
-            background: var(--secondary); border-bottom: 1px solid var(--border);
-            scrollbar-width: none; -webkit-overflow-scrolling: touch;
-        }
-        .btn-sm { 
-            padding: 6px 12px; font-size: 12px; border: 1px solid var(--border); 
-            background: transparent; color: var(--text); border-radius: 4px; white-space: nowrap;
-        }
+        body { display: flex; flex-direction: column; font-family: sans-serif; }
+        #header { padding: 10px 15px; display: flex; justify-content: space-between; background: var(--secondary); border-bottom: 1px solid var(--border); }
+        .toolbar { display: flex; overflow-x: auto; padding: 6px; gap: 6px; background: var(--secondary); border-bottom: 1px solid var(--border); -webkit-overflow-scrolling: touch; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; border: 1px solid var(--border); background: transparent; color: var(--text); border-radius: 4px; white-space: nowrap; }
         .btn-sm.active { background: var(--accent); color: white; border-color: var(--accent); }
-
+        
+        /* The container must have touch-action: none to let JS handle zoom */
         #chart-container { 
             flex-grow: 1; width: 100%; 
-            touch-action: none; /* Stops the browser from handling the touch */
+            touch-action: none; 
             user-select: none; -webkit-user-select: none;
         }
         
-        .trade-bar { 
-            display: flex; padding: 12px; gap: 12px; background: var(--secondary); 
-            padding-bottom: env(safe-area-inset-bottom, 12px);
-        }
-        button.trade { flex: 1; padding: 14px; border: none; border-radius: 10px; font-weight: bold; color: white; }
+        .trade-bar { display: flex; padding: 12px; gap: 12px; background: var(--secondary); padding-bottom: env(safe-area-inset-bottom, 12px); }
+        button.trade { flex: 1; padding: 14px; border: none; border-radius: 10px; font-weight: bold; color: white; font-size: 16px; }
         .buy { background: #26a69a; } .sell { background: #ef5350; }
     </style>
 </head>
 <body>
 
     <div id="header">
-        <div id="price-info">BTC/USDT <span id="last-price" style="font-family: monospace;">---</span></div>
+        <div>BTC/USDT <span id="last-price" style="font-family: monospace;">---</span></div>
         <div id="balance-display" style="color: #26a69a; font-weight: bold;">$10,000.00</div>
     </div>
 
-    <div class="toolbar" id="tf-bar">
+    <div class="toolbar">
         <button class="btn-sm active" onclick="changeTF('1m', this)">1m</button>
-        <button class="btn-sm" onclick="changeTF('15m', this)">15m</button>
         <button class="btn-sm" onclick="changeTF('1h', this)">1h</button>
         <button class="btn-sm" onclick="toggleInd('MA')">MA</button>
-        <button class="btn-sm" onclick="toggleInd('VOL')">VOL</button>
         <button class="btn-sm" onclick="addDrawing()">📏 Line</button>
         <button class="btn-sm" onclick="resetView()">🎯 Reset</button>
     </div>
@@ -74,110 +59,76 @@
         tg.ready();
 
         let currentInterval = '1m';
-        let ws = null;
-        let balance = parseFloat(localStorage.getItem('paper_balance')) || 10000;
+        let balance = 10000;
         let currentPrice = 0;
 
-        // --- 1. INITIALIZE CHART WITH MOBILE ZOOM OPTIONS ---
-        const chart = klinecharts.init('chart-container');
-        
-        chart.setStyles({
-            grid: { horizontal: { color: '#2b2b43', style: 'dash' }, vertical: { show: false } },
-            yAxis: {
-                size: 80, // Massive hitbox for mobile thumbs
-                scrollZoomEnabled: true, // Key for vertical zoom
-            },
-            xAxis: { scrollZoomEnabled: true },
-            candle: { 
-                tooltip: { showRule: 'follow_cross' },
-                margin: { top: 0.2, bottom: 0.1 } 
+        // 1. INITIALIZE CHART
+        // In v9+, scrollZoomEnabled must be set in the initial options for mobile axis zoom to activate
+        const chart = klinecharts.init('chart-container', {
+            styles: {
+                grid: { horizontal: { color: '#2b2b43', style: 'dash' }, vertical: { show: false } },
+                yAxis: { size: 85, scrollZoomEnabled: true }, // Large size for touch hitbox
+                xAxis: { scrollZoomEnabled: true }
             }
         });
 
-        // --- 2. PREVENT TELEGRAM INTERFERENCE ---
+        // 2. THE MOBILE FIX: PREVENT OVERLAY SCROLLING
         const container = document.getElementById('chart-container');
-        container.addEventListener('touchstart', (e) => {
-            // If the user touches the right side (where the price axis is)
-            // we stop the event from bubbling up to Telegram's "swipe-to-close"
-            if (e.touches[0].clientX > window.innerWidth - 85) {
-                e.stopPropagation();
+        
+        // This listener "kills" the browser's attempt to scroll the page
+        container.addEventListener('touchmove', function(e) {
+            if (e.touches.length === 1) {
+                e.preventDefault(); 
             }
         }, { passive: false });
 
-        container.addEventListener('touchmove', (e) => {
-            e.preventDefault(); // Kills the "pull-to-refresh" and page scroll
-        }, { passive: false });
-
-        // --- 3. DATA & WEBSOCKET ---
+        // 3. WEBSOCKET & DATA
         async function loadData(interval) {
-            try {
-                const resp = await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=500`);
-                const data = await resp.json();
-                chart.applyNewData(data.map(d => ({
-                    timestamp: d[0], open: +d[1], high: +d[2], low: +d[3], close: +d[4], volume: +d[5]
-                })));
-                startWS(interval);
-            } catch (e) { console.error("Data error", e); }
+            const resp = await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=300`);
+            const data = await resp.json();
+            chart.applyNewData(data.map(d => ({
+                timestamp: d[0], open: +d[1], high: +d[2], low: +d[3], close: +d[4], volume: +d[5]
+            })));
+            startWS(interval);
         }
 
         function startWS(interval) {
-            if (ws) ws.close();
-            ws = new WebSocket(`wss://stream.binance.com:9443/ws/btcusdt@kline_${interval}`);
+            const ws = new WebSocket(`wss://stream.binance.com:9443/ws/btcusdt@kline_${interval}`);
             ws.onmessage = (e) => {
                 const { k } = JSON.parse(e.data);
                 currentPrice = parseFloat(k.c);
                 document.getElementById('last-price').innerText = `$${currentPrice.toFixed(2)}`;
-                chart.updateData({
-                    timestamp: k.t, open: +k.o, high: +k.h, low: +k.l, close: +k.c, volume: +k.v
-                });
+                chart.updateData({ timestamp: k.t, open: +k.o, high: +k.h, low: +k.l, close: +k.c, volume: +k.v });
             };
         }
 
-        // --- 4. TOOLBAR FUNCTIONS ---
+        // 4. HELPERS
         function changeTF(tf, btn) {
-            document.querySelectorAll('#tf-bar .btn-sm').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.btn-sm').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            currentInterval = tf;
             loadData(tf);
         }
 
-        const activeInds = {};
+        function resetView() { chart.scrollToRealTime(); }
+        
+        function addDrawing() { 
+            chart.createOverlay({ name: 'segment' }); 
+            tg.showAlert("Touch two points on the chart to place your line.");
+        }
+
         function toggleInd(name) {
-            if (activeInds[name]) {
-                chart.removeIndicator(activeInds[name]);
-                delete activeInds[name];
-            } else {
-                const isOverlay = (name === 'MA');
-                activeInds[name] = chart.createIndicator(name, isOverlay, { id: isOverlay ? 'candle_pane' : undefined });
-            }
+            // Simple toggle logic
+            chart.createIndicator(name, true, { id: 'candle_pane' });
         }
 
-        function addDrawing() {
-            chart.createOverlay({ name: 'segment' });
-            tg.HapticFeedback.selectionChanged();
-        }
-
-        function resetView() {
-            chart.scrollToRealTime();
-        }
-
-        // --- 5. TRADE ---
         function handleTrade(side) {
-            if (!currentPrice) return;
-            tg.HapticFeedback.impactOccurred('light');
-            tg.showConfirm(`Confirm ${side} at $${currentPrice.toFixed(2)}?`, (ok) => {
-                if (ok) {
-                    if (side === 'BUY' && balance >= 1000) { balance -= 1000; }
-                    else if (side === 'SELL') { tg.showAlert("Sold position"); }
-                    document.getElementById('balance-display').innerText = `$${balance.toLocaleString()}`;
-                    localStorage.setItem('paper_balance', balance);
-                }
+            tg.HapticFeedback.impactOccurred('medium');
+            tg.showConfirm(`Confirm ${side} at $${currentPrice}?`, (ok) => {
+                if(ok) tg.showAlert("Order Placed!");
             });
         }
 
-        // Init App
         loadData('1m');
-        document.getElementById('balance-display').innerText = `$${balance.toLocaleString()}`;
         window.onresize = () => chart.resize();
     </script>
 </body>
