@@ -8,39 +8,19 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
-  body {
-    margin: 0;
-    background: #0d1117;
-    color: white;
-    font-family: Arial;
-  }
-
+  body { margin:0; background:#0d1117; color:white; font-family:Arial; }
   #topbar {
-    display: flex;
-    gap: 8px;
-    padding: 10px;
-    background: #161b22;
-    overflow-x: auto;
+    display:flex; gap:8px; padding:10px;
+    background:#161b22; overflow-x:auto;
   }
-
   button {
-    padding: 8px 12px;
-    border: none;
-    background: #21262d;
-    color: white;
-    border-radius: 6px;
-    cursor: pointer;
-    white-space: nowrap;
+    padding:8px 12px; border:none;
+    background:#21262d; color:white;
+    border-radius:6px; cursor:pointer;
+    white-space:nowrap;
   }
-
-  button.active {
-    background: #238636;
-  }
-
-  #chart {
-    width: 100%;
-    height: 90vh;
-  }
+  button.active { background:#238636; }
+  #chart { width:100%; height:90vh; }
 </style>
 </head>
 
@@ -50,7 +30,6 @@
   <button onclick="loadSymbol('BTCUSDT')" id="BTCUSDT">BTC</button>
   <button onclick="loadSymbol('ETHUSDT')" id="ETHUSDT">ETH</button>
   <button onclick="loadSymbol('SOLUSDT')" id="SOLUSDT">SOL</button>
-
   <button onclick="saveDrawings()">💾 Save</button>
   <button onclick="clearDrawings()">🗑 Clear</button>
 </div>
@@ -61,18 +40,20 @@
 let chart;
 let currentSymbol = "BTCUSDT";
 
+// Telegram expand
+if (window.Telegram?.WebApp) {
+  Telegram.WebApp.expand();
+}
+
 // Telegram user
 const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
 const userId = user ? user.id : "guest";
 
-// Init chart AFTER page loads
+// Init chart
 window.onload = () => {
   chart = klinecharts.init('chart');
-
-  // Add indicator (optional)
   chart.createIndicator('MA');
 
-  // Fix Telegram rendering
   setTimeout(() => {
     resizeChart();
     loadSymbol("BTCUSDT");
@@ -85,23 +66,59 @@ function resizeChart() {
   chart.resize(el.clientWidth, el.clientHeight);
 }
 
-// Highlight active button
+// Active button UI
 function setActive(symbol) {
   document.querySelectorAll("#topbar button").forEach(btn => btn.classList.remove("active"));
   document.getElementById(symbol).classList.add("active");
 }
 
-// Load Binance data
+// 🔥 MAIN LOADER (WITH FALLBACKS)
 async function loadSymbol(symbol) {
   currentSymbol = symbol;
   setActive(symbol);
 
   try {
-    const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1m&limit=500`);
-    const data = await res.json();
+    let data = null;
 
+    // 1️⃣ Binance primary
+    try {
+      let res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1m&limit=500`);
+      let json = await res.json();
+      if (Array.isArray(json)) data = json;
+    } catch {}
+
+    // 2️⃣ Binance alternative domain
+    if (!data) {
+      try {
+        let res = await fetch(`https://api.binance.me/api/v3/klines?symbol=${symbol}&interval=1m&limit=500`);
+        let json = await res.json();
+        if (Array.isArray(json)) data = json;
+      } catch {}
+    }
+
+    // 3️⃣ KuCoin fallback (convert symbol)
+    if (!data) {
+      try {
+        const kucoinSymbol = symbol.replace("USDT", "-USDT");
+        let res = await fetch(`https://api.kucoin.com/api/v1/market/candles?type=1min&symbol=${kucoinSymbol}`);
+        let json = await res.json();
+
+        if (json?.data) {
+          data = json.data.map(k => [
+            k[0]*1000, k[1], k[3], k[4], k[2], k[5]
+          ]);
+        }
+      } catch {}
+    }
+
+    // ❌ If all failed
+    if (!data) {
+      throw new Error("All APIs failed");
+    }
+
+    // Format data
     const formatted = data.map(k => ({
-      timestamp: k[0],
+      timestamp: +k[0],
       open: +k[1],
       high: +k[2],
       low: +k[3],
@@ -112,15 +129,13 @@ async function loadSymbol(symbol) {
     chart.clearData();
     chart.applyNewData(formatted);
 
-    setTimeout(() => {
-      resizeChart();
-    }, 100);
+    setTimeout(resizeChart, 100);
 
     loadDrawings();
 
   } catch (err) {
     console.error(err);
-    alert("Failed to load data");
+    alert("⚠️ Network blocked. Try VPN or different internet.");
   }
 }
 
@@ -148,7 +163,7 @@ function clearDrawings() {
   localStorage.removeItem(key);
 }
 
-// Handle resize (Telegram fix)
+// Resize listener
 window.addEventListener("resize", () => {
   if (chart) resizeChart();
 });
